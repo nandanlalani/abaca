@@ -30,9 +30,23 @@ const Employees = () => {
     job_title: '',
     basic_salary: ''
   });
+  const [editEmployee, setEditEmployee] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    address: '',
+    job_title: '',
+    department: '',
+    basic_salary: ''
+  });
 
   useEffect(() => {
-    fetchEmployees();
+    // Add delay to prevent API call conflicts
+    const timer = setTimeout(() => {
+      fetchEmployees();
+    }, 400);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchEmployees = async () => {
@@ -62,7 +76,30 @@ const Employees = () => {
 
   const handleEditEmployee = (employee) => {
     setSelectedEmployee(employee);
+    setEditEmployee({
+      first_name: employee.first_name || '',
+      last_name: employee.last_name || '',
+      phone: employee.phone || '',
+      address: employee.address || '',
+      job_title: employee.job_details?.title || '',
+      department: employee.job_details?.department || '',
+      basic_salary: employee.salary_structure?.basic || ''
+    });
     setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateEmployee = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.put(`/profiles/employees/${selectedEmployee.employee_id}`, editEmployee);
+      if (response.data.success) {
+        toast.success('Employee updated successfully');
+        setIsEditDialogOpen(false);
+        fetchEmployees();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update employee');
+    }
   };
 
   const handleAddEmployee = async (e) => {
@@ -355,6 +392,94 @@ const Employees = () => {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Employee Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Employee</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdateEmployee} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_first_name">First Name *</Label>
+                  <Input
+                    id="edit_first_name"
+                    value={editEmployee.first_name}
+                    onChange={(e) => setEditEmployee({...editEmployee, first_name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_last_name">Last Name *</Label>
+                  <Input
+                    id="edit_last_name"
+                    value={editEmployee.last_name}
+                    onChange={(e) => setEditEmployee({...editEmployee, last_name: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit_phone">Phone</Label>
+                <Input
+                  id="edit_phone"
+                  value={editEmployee.phone}
+                  onChange={(e) => setEditEmployee({...editEmployee, phone: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit_address">Address</Label>
+                <Input
+                  id="edit_address"
+                  value={editEmployee.address}
+                  onChange={(e) => setEditEmployee({...editEmployee, address: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_department">Department *</Label>
+                  <Input
+                    id="edit_department"
+                    value={editEmployee.department}
+                    onChange={(e) => setEditEmployee({...editEmployee, department: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_job_title">Job Title *</Label>
+                  <Input
+                    id="edit_job_title"
+                    value={editEmployee.job_title}
+                    onChange={(e) => setEditEmployee({...editEmployee, job_title: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit_basic_salary">Basic Salary *</Label>
+                <Input
+                  id="edit_basic_salary"
+                  type="number"
+                  value={editEmployee.basic_salary}
+                  onChange={(e) => setEditEmployee({...editEmployee, basic_salary: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Update Employee</Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>

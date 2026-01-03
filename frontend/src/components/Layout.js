@@ -38,7 +38,12 @@ const Layout = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    fetchNotifications();
+    // Add delay to prevent API call conflicts with AuthContext
+    const timer = setTimeout(() => {
+      fetchNotifications();
+    }, 200);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchNotifications = async () => {

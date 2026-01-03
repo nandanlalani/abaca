@@ -12,7 +12,10 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
-      fetchUserProfile();
+      // Add a small delay to prevent immediate API call conflicts
+      setTimeout(() => {
+        fetchUserProfile();
+      }, 100);
     } else {
       setLoading(false);
     }

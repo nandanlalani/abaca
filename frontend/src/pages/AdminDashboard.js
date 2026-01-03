@@ -16,31 +16,104 @@ const AdminDashboard = () => {
   const [recentLeaves, setRecentLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  console.log('Component rendered with stats:', stats);
+
   useEffect(() => {
-    fetchDashboardData();
+    console.log('Stats state updated:', stats);
+  }, [stats]);
+
+  useEffect(() => {
+    // Add delay to prevent API call conflicts with other components
+    const timer = setTimeout(() => {
+      console.log('Current user from localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
+      console.log('Access token exists:', !!localStorage.getItem('access_token'));
+      fetchDashboardData();
+    }, 300);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const employeesRes = await api.get('/employees');
-      const totalEmployees = employeesRes.data.employees.length;
+      console.log('=== DASHBOARD DEBUG START ===');
+      console.log('Current user from localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
+      console.log('Access token exists:', !!localStorage.getItem('access_token'));
+      
+      // Test authentication first
+      console.log('0. Testing authentication...');
+      const authTest = await api.get('/auth/me');
+      console.log('Auth test response:', authTest.data);
+      
+      // Fetch employees
+      console.log('1. Fetching employees...');
+      const employeesRes = await api.get('/profiles/employees');
+      console.log('Employees API response:', employeesRes.data);
+      const totalEmployees = employeesRes.data.success ? employeesRes.data.employees.length : 0;
+      console.log('Total employees calculated:', totalEmployees);
 
+      // Fetch today's attendance
       const today = new Date().toISOString().split('T')[0];
+      console.log('2. Fetching attendance for date:', today);
       const attendanceRes = await api.get(`/attendance?start_date=${today}&end_date=${today}`);
-      const presentToday = attendanceRes.data.attendance.filter((a) => a.status === 'present').length;
+      console.log('Attendance API response:', attendanceRes.data);
+      const presentToday = attendanceRes.data.success ? 
+        attendanceRes.data.attendance.filter((a) => a.status === 'present').length : 0;
+      console.log('Present today calculated:', presentToday);
 
+      // Fetch pending leaves
+      console.log('3. Fetching pending leaves...');
       const leavesRes = await api.get('/leaves?status=pending');
-      const pendingLeaves = leavesRes.data.leaves.length;
-      setRecentLeaves(leavesRes.data.leaves.slice(0, 5));
+      console.log('Leaves API response:', leavesRes.data);
+      const pendingLeaves = leavesRes.data.success ? leavesRes.data.leaves.length : 0;
+      console.log('Pending leaves calculated:', pendingLeaves);
+      if (leavesRes.data.success) {
+        setRecentLeaves(leavesRes.data.leaves.slice(0, 5));
+      }
 
-      setStats({
+      // Fetch payroll data (if available)
+      let thisMonthPayroll = 0;
+      try {
+        console.log('4. Fetching payroll data...');
+        const payrollRes = await api.get('/payroll');
+        console.log('Payroll API response:', payrollRes.data);
+        if (payrollRes.data.success && payrollRes.data.payrolls.length > 0) {
+          // Get the most recent month's payroll instead of current month
+          const payrolls = payrollRes.data.payrolls;
+          const mostRecentPayroll = payrolls.reduce((latest, current) => {
+            const latestDate = new Date(latest.year, latest.month - 1);
+            const currentDate = new Date(current.year, current.month - 1);
+            return currentDate > latestDate ? current : latest;
+          });
+          
+          console.log('Most recent payroll month:', mostRecentPayroll.month, mostRecentPayroll.year);
+          
+          // Sum all payrolls for the most recent month
+          thisMonthPayroll = payrolls
+            .filter(p => p.month === mostRecentPayroll.month && p.year === mostRecentPayroll.year)
+            .reduce((total, p) => total + (p.net_pay || 0), 0);
+          
+          console.log('Most recent month payroll calculated:', thisMonthPayroll);
+        }
+      } catch (payrollError) {
+        console.log('Payroll error:', payrollError.message);
+      }
+
+      const newStats = {
         totalEmployees,
         presentToday,
         pendingLeaves,
-        thisMonthPayroll: 0,
-      });
+        thisMonthPayroll,
+      };
+      
+      console.log('5. Final stats to set:', newStats);
+      setStats(newStats);
+      console.log('6. Stats state after setting:', stats);
+      console.log('=== DASHBOARD DEBUG END ===');
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      toast.error(`Failed to load dashboard data: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -72,7 +145,7 @@ const AdminDashboard = () => {
       trendUp: false,
     },
     {
-      title: 'Monthly Payroll',
+      title: 'Recent Payroll',
       value: `$${stats.thisMonthPayroll.toLocaleString()}`,
       icon: DollarSign,
       color: 'text-purple-500',
@@ -80,6 +153,9 @@ const AdminDashboard = () => {
       trendUp: true,
     },
   ];
+
+  console.log('Rendering with stats:', stats);
+  console.log('Stat cards:', statCards);
 
   return (
     <Layout>
