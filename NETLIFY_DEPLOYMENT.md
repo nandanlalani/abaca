@@ -3,7 +3,7 @@
 ## 📋 Build Commands for Netlify:
 
 ```bash
-Build Command: npm run build
+Build Command: npm install --legacy-peer-deps && npm run build
 Publish Directory: build
 Base Directory: frontend (if deploying from root, otherwise leave empty)
 Node Version: 18.x
@@ -18,6 +18,7 @@ REACT_APP_BACKEND_URL=https://payroll-nog2.onrender.com
 GENERATE_SOURCEMAP=false
 DISABLE_ESLINT_PLUGIN=true
 NODE_VERSION=18
+NPM_FLAGS=--legacy-peer-deps
 ```
 
 ## 📁 Files Created for Netlify:
