@@ -336,4 +336,135 @@ router.put('/employees/:employee_id', authenticate, requireAdminOrHR, async (req
   }
 });
 
+// Get leave balance
+router.get('/leave-balance', authenticate, async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user_id: req.user.user_id });
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profile not found'
+      });
+    }
+
+    // Initialize leave balance if not exists
+    if (!profile.leave_balance) {
+      profile.leave_balance = {
+        sick: 12,
+        casual: 12,
+        annual: 21,
+        maternity: 180,
+        paternity: 15,
+        year: new Date().getFullYear()
+      };
+      await profile.save();
+    }
+
+    // Calculate used leaves for current year
+    const currentYear = new Date().getFullYear();
+    const { Leave } = require('../models');
+    
+    const usedLeaves = await Leave.aggregate([
+      {
+        $match: {
+          employee_id: req.user.employee_id,
+          status: 'approved',
+          $expr: {
+            $eq: [{ $year: '$start_date' }, currentYear]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$leave_type',
+          total_days: {
+            $sum: {
+              $add: [
+                { $divide: [{ $subtract: ['$end_date', '$start_date'] }, 1000 * 60 * 60 * 24] },
+                1
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Calculate remaining balance
+    const balance = { ...profile.leave_balance.toObject() };
+    usedLeaves.forEach(used => {
+      if (balance[used._id] !== undefined) {
+        balance[used._id] = Math.max(0, balance[used._id] - Math.ceil(used.total_days));
+      }
+    });
+
+    res.json({
+      success: true,
+      balance,
+      used_leaves: usedLeaves
+    });
+  } catch (error) {
+    console.error('Get leave balance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Update leave balance (Admin/HR only)
+router.put('/leave-balance/:employee_id', authenticate, requireAdminOrHR, [
+  body('leave_type').isIn(['sick', 'casual', 'annual', 'maternity', 'paternity']).withMessage('Invalid leave type'),
+  body('balance').isNumeric().withMessage('Balance must be a number')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { employee_id } = req.params;
+    const { leave_type, balance } = req.body;
+
+    const profile = await Profile.findOne({ employee_id });
+    
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    if (!profile.leave_balance) {
+      profile.leave_balance = {
+        sick: 12,
+        casual: 12,
+        annual: 21,
+        maternity: 180,
+        paternity: 15,
+        year: new Date().getFullYear()
+      };
+    }
+
+    profile.leave_balance[leave_type] = balance;
+    await profile.save();
+
+    res.json({
+      success: true,
+      message: 'Leave balance updated successfully',
+      balance: profile.leave_balance
+    });
+  } catch (error) {
+    console.error('Update leave balance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 module.exports = router;

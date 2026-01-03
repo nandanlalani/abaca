@@ -12,7 +12,10 @@ const router = express.Router();
 router.post('/signup', [
   body('employee_id').notEmpty().withMessage('Employee ID is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   body('role').optional().isIn(['admin', 'hr', 'employee']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
@@ -199,71 +202,6 @@ router.post('/signin', [
   }
 });
 
-// Test email endpoint (remove in production)
-router.post('/test-email', async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-
-    console.log('Testing email with config:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      from: process.env.FROM_EMAIL
-    });
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-
-    // Test connection
-    await transporter.verify();
-    console.log('SMTP connection verified successfully');
-
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
-      to: email,
-      subject: 'Test Email - Dayflow HRMS',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Test Email</h2>
-          <p>This is a test email from Dayflow HRMS.</p>
-          <p>If you received this, SMTP is working correctly!</p>
-          <p>Time: ${new Date().toLocaleString()}</p>
-        </div>
-      `
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    console.log('Test email sent successfully:', result.messageId);
-
-    res.json({
-      success: true,
-      message: 'Test email sent successfully',
-      messageId: result.messageId
-    });
-  } catch (error) {
-    console.error('Test email error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send test email',
-      error: error.message
-    });
-  }
-});
-
 // Send OTP for password reset
 router.post('/send-otp', [
   body('email').isEmail().withMessage('Valid email is required')
@@ -330,6 +268,15 @@ router.post('/verify-otp', [
 
     const { email, otp } = req.body;
 
+    // First check if user exists in our system
+    const userExists = await User.findOne({ email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email not found in our system. Please contact your administrator.'
+      });
+    }
+
     const user = await User.findOne({
       email,
       reset_otp: otp,
@@ -374,6 +321,15 @@ router.post('/reset-password-otp', [
 
     const { email, otp, new_password } = req.body;
 
+    // First check if user exists in our system
+    const userExists = await User.findOne({ email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email not found in our system. Please contact your administrator.'
+      });
+    }
+
     const user = await User.findOne({
       email,
       reset_otp: otp,
@@ -410,15 +366,24 @@ router.post('/forgot-password', [
   body('email').isEmail().withMessage('Valid email is required')
 ], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const { email } = req.body;
 
     const user = await User.findOne({ email });
     
     if (!user) {
-      // Don't reveal if email exists
-      return res.json({
-        success: true,
-        message: 'If email exists, reset link has been sent'
+      // Security: Don't reveal if email exists or not, but be clear about company policy
+      return res.status(404).json({
+        success: false,
+        message: 'Email not found in our system. Please contact your administrator.'
       });
     }
 
@@ -447,7 +412,10 @@ router.post('/forgot-password', [
 // Reset password
 router.post('/reset-password', [
   body('token').notEmpty().withMessage('Reset token is required'),
-  body('new_password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+  body('new_password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -473,6 +441,15 @@ router.post('/reset-password', [
       });
     }
 
+    // Additional check: Ensure user is still in our system
+    const userExists = await User.findOne({ email: user.email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found. Please contact your administrator.'
+      });
+    }
+
     user.password_hash = await hashPassword(new_password);
     user.reset_token = undefined;
     user.reset_token_expires = undefined;
@@ -491,12 +468,80 @@ router.post('/reset-password', [
   }
 });
 
+// Refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token required'
+      });
+    }
+
+    // Verify refresh token
+    const decoded = verifyToken(refresh_token, true);
+    
+    // Get user from database
+    const user = await User.findOne({ user_id: decoded.user_id });
+    
+    if (!user || !user.refresh_token_hash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Verify refresh token hash
+    const isValidRefreshToken = await verifyPassword(refresh_token, user.refresh_token_hash);
+    
+    if (!isValidRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Create new access token
+    const tokenPayload = {
+      user_id: user.user_id,
+      email: user.email,
+      role: user.role,
+      employee_id: user.employee_id
+    };
+
+    const access_token = createAccessToken(tokenPayload);
+
+    res.json({
+      success: true,
+      access_token
+    });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token expired'
+      });
+    }
+    
+    console.error('Refresh token error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Invalid refresh token'
+    });
+  }
+});
+
 // Add Employee (Admin only)
 router.post('/add-employee', [
   body('first_name').notEmpty().withMessage('First name is required'),
   body('last_name').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   body('role').optional().isIn(['admin', 'hr', 'employee']).withMessage('Invalid role'),
   body('department').notEmpty().withMessage('Department is required'),
   body('job_title').notEmpty().withMessage('Job title is required'),
@@ -636,7 +681,10 @@ router.get('/me', authenticate, async (req, res) => {
 // Change password
 router.put('/change-password', authenticate, [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+  body('newPassword')
+    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

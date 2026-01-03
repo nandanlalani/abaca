@@ -18,6 +18,7 @@ import api from '../utils/api';
 
 const Leave = () => {
   const [leaves, setLeaves] = useState([]);
+  const [leaveBalance, setLeaveBalance] = useState({});
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const Leave = () => {
 
   useEffect(() => {
     fetchLeaves();
+    fetchLeaveBalance();
   }, []);
 
   const fetchLeaves = async () => {
@@ -41,6 +43,25 @@ const Leave = () => {
       toast.error('Failed to fetch leave requests');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaveBalance = async () => {
+    try {
+      const response = await api.get('/profiles/leave-balance');
+      if (response.data.success) {
+        setLeaveBalance(response.data.balance);
+      }
+    } catch (error) {
+      console.error('Failed to fetch leave balance:', error);
+      // Set default balance if API fails
+      setLeaveBalance({
+        sick: 12,
+        casual: 12,
+        annual: 21,
+        maternity: 180,
+        paternity: 15
+      });
     }
   };
 

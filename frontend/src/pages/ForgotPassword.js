@@ -49,7 +49,11 @@ const ForgotPassword = () => {
         }
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send reset request');
+      if (error.response?.status === 404) {
+        toast.error('Email not found in our system. Please contact your administrator.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to send reset request');
+      }
     }
 
     setLoading(false);
@@ -66,7 +70,11 @@ const ForgotPassword = () => {
         setStep('reset');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Invalid OTP');
+      if (error.response?.status === 404) {
+        toast.error('Email not found in our system. Please contact your administrator.');
+      } else {
+        toast.error(error.response?.data?.message || 'Invalid OTP');
+      }
     }
 
     setLoading(false);
@@ -98,7 +106,11 @@ const ForgotPassword = () => {
         window.location.href = '/signin';
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to reset password');
+      if (error.response?.status === 404) {
+        toast.error('Email not found in our system. Please contact your administrator.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to reset password');
+      }
     }
 
     setLoading(false);

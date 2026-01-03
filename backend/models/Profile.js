@@ -8,6 +8,15 @@ const salaryStructureSchema = new mongoose.Schema({
   deductions: { type: Number, default: 0 }
 });
 
+const leaveBalanceSchema = new mongoose.Schema({
+  sick: { type: Number, default: 12 },
+  casual: { type: Number, default: 12 },
+  annual: { type: Number, default: 21 },
+  maternity: { type: Number, default: 180 },
+  paternity: { type: Number, default: 15 },
+  year: { type: Number, default: () => new Date().getFullYear() }
+});
+
 const jobDetailsSchema = new mongoose.Schema({
   title: { type: String, required: true },
   department: { type: String, required: true },
@@ -50,6 +59,7 @@ const profileSchema = new mongoose.Schema({
   address: String,
   job_details: jobDetailsSchema,
   salary_structure: salaryStructureSchema,
+  leave_balance: leaveBalanceSchema,
   emergency_contact: emergencyContactSchema,
   documents: [{
     type: { type: String },
