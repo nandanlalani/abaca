@@ -28,6 +28,10 @@ const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
   'http://localhost:3001',
   'http://localhost:3002',
   'http://localhost:5000',
+  'https://abaca-six.vercel.app',
+  'https://*.vercel.app',
+  /\.vercel\.app$/,
+  /\.netlify\.app$/,
   /\.replit\.dev$/,
   /\.repl\.co$/
 ];

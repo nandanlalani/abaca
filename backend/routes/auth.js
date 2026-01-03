@@ -12,10 +12,7 @@ const router = express.Router();
 router.post('/signup', [
   body('employee_id').notEmpty().withMessage('Employee ID is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('role').optional().isIn(['admin', 'hr', 'employee']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
@@ -200,6 +197,15 @@ router.post('/signin', [
       message: 'Internal server error'
     });
   }
+});
+
+// Test endpoint for debugging
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Auth routes are working',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Send OTP for password reset
