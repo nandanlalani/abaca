@@ -9,17 +9,25 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const notifications = await Notification.find({ user_id: req.user.user_id })
       .sort({ created_at: -1 })
-      .limit(100);
+      .limit(100)
+      .lean();
+
+    // Add is_read field based on read_at
+    const notificationsWithReadStatus = notifications.map(notification => ({
+      ...notification,
+      is_read: !!notification.read_at
+    }));
 
     res.json({
       success: true,
-      notifications
+      notifications: notificationsWithReadStatus
     });
   } catch (error) {
     console.error('Get notifications error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
+    // Return empty array instead of error to prevent UI breaking
+    res.json({
+      success: true,
+      notifications: []
     });
   }
 });

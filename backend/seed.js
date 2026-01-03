@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { User, Profile, Attendance, Leave, Payroll } = require('./models');
+const { User, Profile, Attendance, Leave, Payroll, Notification } = require('./models');
 const { hashPassword } = require('./utils/auth');
 const { format, subDays } = require('date-fns');
 require('dotenv').config();
@@ -17,6 +17,7 @@ const seedUsers = async () => {
       await mongoose.connection.db.dropCollection('attendances');
       await mongoose.connection.db.dropCollection('leaves');
       await mongoose.connection.db.dropCollection('payrolls');
+      await mongoose.connection.db.dropCollection('notifications');
       console.log('Dropped existing collections');
     } catch (error) {
       console.log('Collections may not exist, continuing...');
@@ -263,6 +264,63 @@ const seedUsers = async () => {
     
     await Payroll.insertMany(payrollRecords);
     console.log(`✅ Created ${payrollRecords.length} payroll records`);
+
+    // Create sample notifications
+    const notificationRecords = [];
+    
+    for (const emp of employees) {
+      // Create 2-4 notifications per employee
+      const numNotifications = 2 + Math.floor(Math.random() * 3);
+      
+      for (let i = 0; i < numNotifications; i++) {
+        const notificationTypes = [
+          {
+            type: 'leave_update',
+            title: 'Leave Request Approved',
+            message: 'Your annual leave request has been approved'
+          },
+          {
+            type: 'payroll',
+            title: 'Payroll Generated',
+            message: 'Your payroll for this month has been processed'
+          },
+          {
+            type: 'attendance',
+            title: 'Attendance Reminder',
+            message: 'Please remember to check in when you arrive'
+          },
+          {
+            type: 'profile',
+            title: 'Profile Updated',
+            message: 'Your profile information has been updated successfully'
+          },
+          {
+            type: 'leave_request',
+            title: 'New Leave Request',
+            message: 'A new leave request requires your attention'
+          }
+        ];
+        
+        const randomNotification = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+        const createdAt = subDays(new Date(), Math.floor(Math.random() * 7)); // Random date in last 7 days
+        const isRead = Math.random() > 0.4; // 60% chance of being read
+        
+        const notification = new Notification({
+          user_id: emp.user_id,
+          type: randomNotification.type,
+          title: randomNotification.title,
+          message: randomNotification.message,
+          metadata: {},
+          read_at: isRead ? new Date(createdAt.getTime() + Math.random() * 86400000) : undefined,
+          created_at: createdAt
+        });
+        
+        notificationRecords.push(notification);
+      }
+    }
+    
+    await Notification.insertMany(notificationRecords);
+    console.log(`✅ Created ${notificationRecords.length} notifications`);
 
     console.log('✅ Demo users created successfully:');
     console.log('Admin: admin@dayflow.com / Admin123');

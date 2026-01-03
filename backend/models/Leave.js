@@ -34,7 +34,7 @@ const leaveSchema = new mongoose.Schema({
   },
   leave_type: {
     type: String,
-    enum: ['sick', 'casual', 'annual', 'maternity', 'paternity', 'emergency'],
+    enum: ['sick', 'casual', 'annual', 'maternity', 'paternity'],
     required: true
   },
   start_date: {
@@ -53,6 +53,8 @@ const leaveSchema = new mongoose.Schema({
   },
   approver_id: String,
   approver_comment: String,
+  admin_remarks: String, // Add this field for frontend compatibility
+  created_by: String,
   history: [leaveHistorySchema],
   created_at: {
     type: Date,
