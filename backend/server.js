@@ -19,6 +19,10 @@ const reportRoutes = require('./routes/reports');
 
 const app = express();
 const server = createServer(app);
+
+// Trust proxy for Render deployment
+app.set('trust proxy', 1);
+
 const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
   'http://localhost:3000', 
   'http://localhost:3001',
@@ -64,27 +68,29 @@ app.use(cors({
 // Input sanitization
 app.use(mongoSanitize());
 
-// Rate limiting - more lenient for development
+// Rate limiting - production-ready configuration
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 5 : 50, // More lenient in development
+  max: 200, // Generous limit for production
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust Render's proxy
 });
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 2000, // More lenient in development
+  max: 2000, // High limit for production API usage
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust Render's proxy
 });
 
 // Apply rate limiting
