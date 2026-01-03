@@ -148,7 +148,7 @@ const seedUsers = async () => {
     const attendanceRecords = [];
     
     for (let i = 0; i < 30; i++) {
-      const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const startDate = subDays(new Date(), i);
       
       for (const emp of employees) {
         // Skip some days randomly to simulate absences
@@ -159,20 +159,24 @@ const seedUsers = async () => {
         const checkOutHour = 17 + Math.floor(Math.random() * 2); // 5-6 PM
         const checkOutMinute = Math.floor(Math.random() * 60);
         
-        const checkInTime = new Date(`${date}T${checkInHour.toString().padStart(2, '0')}:${checkInMinute.toString().padStart(2, '0')}:00`);
-        const checkOutTime = new Date(`${date}T${checkOutHour.toString().padStart(2, '0')}:${checkOutMinute.toString().padStart(2, '0')}:00`);
+        const checkInTime = new Date(startDate);
+        checkInTime.setHours(checkInHour, checkInMinute, 0, 0);
+        
+        const checkOutTime = new Date(startDate);
+        checkOutTime.setHours(checkOutHour, checkOutMinute, 0, 0);
         
         const totalMinutes = Math.floor((checkOutTime - checkInTime) / (1000 * 60));
         
         const attendance = new Attendance({
           employee_id: emp.employee_id,
           user_id: emp.user_id,
-          date: date,
+          date: startDate,
           check_in: checkInTime,
           check_out: checkOutTime,
           total_minutes: totalMinutes,
           status: 'present',
-          created_by: emp.user_id
+          created_by: emp.user_id,
+          created_at: new Date()
         });
         
         attendanceRecords.push(attendance);
@@ -201,11 +205,12 @@ const seedUsers = async () => {
           employee_id: emp.employee_id,
           user_id: emp.user_id,
           leave_type: leaveTypes[Math.floor(Math.random() * leaveTypes.length)],
-          start_date: format(startDate, 'yyyy-MM-dd'),
-          end_date: format(endDate, 'yyyy-MM-dd'),
+          start_date: startDate,
+          end_date: endDate,
           status: leaveStatuses[Math.floor(Math.random() * leaveStatuses.length)],
           remarks: `Sample leave request for ${duration} day(s)`,
-          created_by: emp.user_id
+          created_by: emp.user_id,
+          created_at: new Date()
         });
         
         leaveRecords.push(leave);

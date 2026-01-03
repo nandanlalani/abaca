@@ -110,11 +110,29 @@ const Leave = () => {
     );
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'N/A';
+      return format(date, 'MMM dd, yyyy');
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
   const calculateDays = (startDate, endDate) => {
     if (!startDate || !endDate) return 0;
-    const diffTime = Math.abs(endDate - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays;
+    } catch (error) {
+      return 0;
+    }
   };
 
   const leaveStats = {
@@ -319,13 +337,13 @@ const Leave = () => {
                 {leaves.map((leave) => (
                   <TableRow key={leave.leave_id}>
                     <TableCell>{getLeaveTypeBadge(leave.leave_type)}</TableCell>
-                    <TableCell>{format(new Date(leave.start_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{format(new Date(leave.end_date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{formatDate(leave.start_date)}</TableCell>
+                    <TableCell>{formatDate(leave.end_date)}</TableCell>
                     <TableCell>
-                      {calculateDays(new Date(leave.start_date), new Date(leave.end_date))} day(s)
+                      {calculateDays(leave.start_date, leave.end_date)} day(s)
                     </TableCell>
                     <TableCell>{getStatusBadge(leave.status)}</TableCell>
-                    <TableCell>{format(new Date(leave.created_at), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{formatDate(leave.created_at)}</TableCell>
                     <TableCell className="max-w-xs truncate">{leave.remarks || 'N/A'}</TableCell>
                   </TableRow>
                 ))}

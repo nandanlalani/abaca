@@ -137,13 +137,40 @@ const AdminLeaves = () => {
     );
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'N/A';
+      return format(date, 'MMM dd, yyyy');
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
+  const formatDetailDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'N/A';
+      return format(date, 'MMMM dd, yyyy');
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
   const calculateDays = (startDate, endDate) => {
     if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays;
+    } catch (error) {
+      return 0;
+    }
   };
 
   const filteredLeaves = leaves.filter(leave => {
@@ -280,13 +307,13 @@ const AdminLeaves = () => {
                       {getEmployeeName(leave.employee_id)}
                     </TableCell>
                     <TableCell>{getLeaveTypeBadge(leave.leave_type)}</TableCell>
-                    <TableCell>{format(new Date(leave.start_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{format(new Date(leave.end_date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{formatDate(leave.start_date)}</TableCell>
+                    <TableCell>{formatDate(leave.end_date)}</TableCell>
                     <TableCell>
                       {calculateDays(leave.start_date, leave.end_date)} day(s)
                     </TableCell>
                     <TableCell>{getStatusBadge(leave.status)}</TableCell>
-                    <TableCell>{format(new Date(leave.created_at), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{formatDate(leave.created_at)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -361,13 +388,13 @@ const AdminLeaves = () => {
                   <div>
                     <Label className="text-sm font-medium">Start Date</Label>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(selectedLeave.start_date), 'MMMM dd, yyyy')}
+                      {formatDetailDate(selectedLeave.start_date)}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">End Date</Label>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(selectedLeave.end_date), 'MMMM dd, yyyy')}
+                      {formatDetailDate(selectedLeave.end_date)}
                     </p>
                   </div>
                   <div>

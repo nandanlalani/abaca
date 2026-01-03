@@ -100,7 +100,24 @@ const Attendance = () => {
 
   const formatTime = (timeString) => {
     if (!timeString) return 'N/A';
-    return format(new Date(timeString), 'HH:mm');
+    try {
+      const date = new Date(timeString);
+      if (isNaN(date.getTime())) return 'N/A';
+      return format(date, 'HH:mm');
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'N/A';
+      return format(date, 'MMM dd, yyyy');
+    } catch (error) {
+      return 'N/A';
+    }
   };
 
   const formatDuration = (minutes) => {
@@ -201,7 +218,10 @@ const Attendance = () => {
                 <PopoverTrigger asChild>
                   <Button variant="outline">
                     <CalendarIcon className="w-4 h-4 mr-2" />
-                    {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
+                    {dateRange?.from && dateRange?.to 
+                      ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
+                      : 'Select date range'
+                    }
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">
@@ -230,7 +250,7 @@ const Attendance = () => {
                 {attendanceRecords.map((record) => (
                   <TableRow key={record.attendance_id}>
                     <TableCell className="font-medium">
-                      {format(new Date(record.date), 'MMM dd, yyyy')}
+                      {formatDate(record.date)}
                     </TableCell>
                     <TableCell>{formatTime(record.check_in)}</TableCell>
                     <TableCell>{formatTime(record.check_out)}</TableCell>
