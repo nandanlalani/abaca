@@ -1,0 +1,183 @@
+{
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "philosophy": "Fusion over Imitation. Emotion First. Content is King.",
+    "anti_patterns": [
+      "Purple/Teal generic SaaS gradients",
+      "Inter font for headings",
+      "Centered layouts for everything",
+      "Default Vercel/Stripe look"
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "headings": {
+        "family": "Manrope",
+        "weights": ["600", "700", "800"],
+        "usage": "All headings (h1-h6), Hero text, Big stats",
+        "letter_spacing": "tracking-tight"
+      },
+      "body": {
+        "family": "Public Sans",
+        "weights": ["400", "500"],
+        "usage": "Paragraphs, Inputs, Tables, Data grids",
+        "letter_spacing": "tracking-normal"
+      },
+      "mono": {
+        "family": "JetBrains Mono",
+        "usage": "Code snippets, IDs, API keys"
+      }
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm text-muted-foreground"
+    }
+  },
+  "colors": {
+    "palette_name": "Organic Swiss",
+    "description": "A professional, high-trust slate foundation with organic accents for human warmth.",
+    "light_mode": {
+      "background": "#F8FAFC",
+      "foreground": "#0F172A",
+      "card": "#FFFFFF",
+      "card_foreground": "#0F172A",
+      "primary": "#0F172A",
+      "primary_foreground": "#F8FAFC",
+      "secondary": "#F1F5F9",
+      "secondary_foreground": "#0F172A",
+      "muted": "#F1F5F9",
+      "muted_foreground": "#64748B",
+      "accent": "#F1F5F9",
+      "accent_foreground": "#0F172A",
+      "destructive": "#EF4444",
+      "destructive_foreground": "#F8FAFC",
+      "border": "#E2E8F0",
+      "input": "#E2E8F0",
+      "ring": "#0F172A"
+    },
+    "dark_mode": {
+      "background": "#020617",
+      "foreground": "#F8FAFC",
+      "card": "#0F172A",
+      "card_foreground": "#F8FAFC",
+      "primary": "#F8FAFC",
+      "primary_foreground": "#0F172A",
+      "secondary": "#1E293B",
+      "secondary_foreground": "#F8FAFC",
+      "muted": "#1E293B",
+      "muted_foreground": "#94A3B8",
+      "accent": "#1E293B",
+      "accent_foreground": "#F8FAFC",
+      "destructive": "#7F1D1D",
+      "destructive_foreground": "#F8FAFC",
+      "border": "#1E293B",
+      "input": "#1E293B",
+      "ring": "#CBD5E1"
+    },
+    "brand_accents": {
+      "brand_primary": "#4F46E5",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "info": "#3B82F6"
+    }
+  },
+  "layout": {
+    "spacing_system": "Generous. Use p-6, p-8, p-12. Avoid cramped p-2 or p-4 for main containers.",
+    "grid_strategies": {
+      "admin_dashboard": {
+        "name": "The Control Room",
+        "structure": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4",
+        "rules": "Dense, data-heavy. Every pixel utilized. No jagged bottoms."
+      },
+      "employee_dashboard": {
+        "name": "The Tetris Grid",
+        "structure": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-6",
+        "rules": "Asymmetric. Mix hero cards (col-span-8) with quick actions (col-span-4)."
+      }
+    },
+    "containers": {
+      "max_width": "max-w-7xl mx-auto",
+      "padding": "px-4 sm:px-6 lg:px-8"
+    }
+  },
+  "components": {
+    "buttons": {
+      "style": "rounded-md font-medium transition-all active:scale-95",
+      "default_height": "h-10 px-4 py-2",
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+    },
+    "cards": {
+      "style": "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "hover_effect": "hover:shadow-md transition-shadow duration-200"
+    },
+    "inputs": {
+      "style": "rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "tables": {
+      "style": "w-full caption-bottom text-sm",
+      "header": "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "row": "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-xl bg-white/70 dark:bg-black/60 border border-white/20 shadow-sm",
+    "gradients": "NO full-screen gradients. Use subtle mesh gradients in card backgrounds only.",
+    "shadows": "shadow-sm for cards, shadow-lg for dropdowns/modals.",
+    "borders": "1px solid border-color. Use border-r or border-b for grid separation."
+  },
+  "assets": {
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-width={1.5} size={20}"
+    },
+    "images": {
+      "login_background": {
+        "url": "https://images.unsplash.com/photo-1766866763822-985dbc6f3405?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3MjQyMTd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwb2ZmaWNlJTIwYXJjaGl0ZWN0dXJlJTIwYnJpZ2h0fGVufDB8fHx8MTc2NzM4OTY3NXww&ixlib=rb-4.1.0&q=85",
+        "alt": "Modern minimalist office architecture"
+      },
+      "team_avatars": [
+        {
+          "url": "https://images.pexels.com/photos/7640768/pexels-photo-7640768.jpeg",
+          "alt": "Diverse team meeting"
+        },
+        {
+          "url": "https://images.pexels.com/photos/7491162/pexels-photo-7491162.jpeg",
+          "alt": "Professional working environment"
+        }
+      ],
+      "abstract_texture": {
+        "url": "https://images.pexels.com/photos/10874578/pexels-photo-10874578.jpeg",
+        "alt": "Abstract fluid shapes"
+      }
+    }
+  },
+  "universal_guidelines": {
+    "general": [
+      "Do not use Inter for headings.",
+      "Do not use generic centered layouts.",
+      "Use 2-3x more spacing than typical designs.",
+      "Every interaction needs micro-animations (hover, active, focus).",
+      "Use sonner for toasts.",
+      "Use lucide-react for icons."
+    ],
+    "testing": [
+      "All interactive elements MUST include data-testid attribute.",
+      "Format: kebab-case, role-based (e.g., login-submit-btn)."
+    ],
+    "accessibility": [
+      "Ensure contrast ratios meet WCAG AA.",
+      "Focus states must be visible.",
+      "Do not rely on color alone for status."
+    ],
+    "file_types": [
+      "Use .jsx or .js for React components (project uses JS).",
+      "Use named exports for components.",
+      "Use default exports for pages."
+    ]
+  },
+  "instructions_to_main_agent": "You are building Dayflow, a professional HRMS. Follow the Organic Swiss design system. Use the provided image URLs for the login page and dashboard placeholders. Implement the 'Control Room' grid for the Admin Dashboard and 'Tetris' grid for the Employee Dashboard. Ensure all components are accessible and have data-testid attributes."
+}
