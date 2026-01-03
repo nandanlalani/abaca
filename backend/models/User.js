@@ -35,6 +35,8 @@ const userSchema = new mongoose.Schema({
   verification_token: String,
   reset_token: String,
   reset_token_expires: Date,
+  reset_otp: String,
+  reset_otp_expires: Date,
   refresh_token_hash: String,
   last_login: Date,
   created_at: {
