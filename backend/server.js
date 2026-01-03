@@ -64,10 +64,10 @@ app.use(cors({
 // Input sanitization
 app.use(mongoSanitize());
 
-// Rate limiting - stricter for production
+// Rate limiting - more lenient for development
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 5 : 50, // More lenient in development
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.'
@@ -78,7 +78,7 @@ const authLimiter = rateLimit({
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Stricter in production
+  max: process.env.NODE_ENV === 'production' ? 100 : 2000, // More lenient in development
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
