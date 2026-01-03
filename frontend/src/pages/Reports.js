@@ -26,13 +26,12 @@ import api from '../utils/api';
 const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
-  const [reportType, setReportType] = useState('attendance');
+  const [reportType, setReportType] = useState('leaves');
   const [dateRange, setDateRange] = useState({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date())
   });
   const [reportData, setReportData] = useState({
-    attendance: [],
     leaves: [],
     payroll: [],
     employees: []
@@ -58,7 +57,6 @@ const Reports = () => {
       const endDate = format(dateRange.to, 'yyyy-MM-dd');
 
       const endpoints = {
-        attendance: `/attendance?start_date=${startDate}&end_date=${endDate}`,
         leaves: `/leaves?start_date=${startDate}&end_date=${endDate}`,
         payroll: `/payroll?start_date=${startDate}&end_date=${endDate}`,
         employees: '/profiles/employees'
@@ -69,7 +67,7 @@ const Reports = () => {
       if (response.data.success) {
         setReportData(prev => ({
           ...prev,
-          [reportType]: response.data[reportType] || response.data.employees || response.data.payrolls || response.data.leaves || response.data.attendance || []
+          [reportType]: response.data[reportType] || response.data.employees || response.data.payrolls || response.data.leaves || []
         }));
       }
     } catch (error) {
@@ -82,23 +80,18 @@ const Reports = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const [employeesRes, attendanceRes, leavesRes, payrollRes] = await Promise.all([
+      const [employeesRes, leavesRes, payrollRes] = await Promise.all([
         api.get('/profiles/employees'),
-        api.get(`/attendance?start_date=${format(dateRange.from, 'yyyy-MM-dd')}&end_date=${format(dateRange.to, 'yyyy-MM-dd')}`),
         api.get('/leaves'),
         api.get('/payroll')
       ]);
 
       const employees = employeesRes.data.employees || [];
-      const attendance = attendanceRes.data.attendance || [];
       const leaves = leavesRes.data.leaves || [];
       const payroll = payrollRes.data.payrolls || [];
 
       // Calculate analytics
       const totalEmployees = employees.length;
-      const presentDays = attendance.filter(a => a.status === 'present').length;
-      const totalWorkingDays = attendance.length;
-      const avgAttendanceRate = totalWorkingDays > 0 ? Math.round((presentDays / totalWorkingDays) * 100) : 0;
       const totalPayrollAmount = payroll.reduce((sum, p) => sum + (p.net_pay || 0), 0);
 
       // Department statistics
@@ -115,7 +108,7 @@ const Reports = () => {
 
       setAnalytics({
         totalEmployees,
-        avgAttendanceRate,
+        avgAttendanceRate: 0, // Removed attendance calculation
         totalLeaveRequests: leaves.length,
         totalPayrollAmount,
         departmentStats,
@@ -141,10 +134,6 @@ const Reports = () => {
       let filename = '';
       
       switch (reportType) {
-        case 'attendance':
-          exportUrl = `/reports/attendance/export?start_date=${startDate}&end_date=${endDate}`;
-          filename = `attendance_report_${startDate}_to_${endDate}.csv`;
-          break;
         case 'leaves':
           exportUrl = `/reports/leaves/export?start_date=${startDate}&end_date=${endDate}`;
           filename = `leave_report_${startDate}_to_${endDate}.csv`;
@@ -227,35 +216,6 @@ const Reports = () => {
 
   const renderReportTable = () => {
     const data = reportData[reportType] || [];
-
-    if (reportType === 'attendance') {
-      return (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Check In</TableHead>
-              <TableHead>Check Out</TableHead>
-              <TableHead>Hours</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((record, index) => (
-              <TableRow key={index}>
-                <TableCell>{record.employee_id}</TableCell>
-                <TableCell>{formatDate(record.date)}</TableCell>
-                <TableCell>{record.check_in ? format(new Date(record.check_in), 'HH:mm') : 'N/A'}</TableCell>
-                <TableCell>{record.check_out ? format(new Date(record.check_out), 'HH:mm') : 'N/A'}</TableCell>
-                <TableCell>{record.total_minutes ? Math.round(record.total_minutes / 60 * 100) / 100 : 'N/A'}h</TableCell>
-                <TableCell>{getStatusBadge(record.status)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      );
-    }
 
     if (reportType === 'leaves') {
       return (
@@ -360,7 +320,7 @@ const Reports = () => {
         <h1 className="text-4xl font-bold tracking-tight">Reports & Analytics</h1>
         
         {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -370,20 +330,6 @@ const Reports = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
                   <p className="text-2xl font-bold">{analytics.totalEmployees}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Attendance Rate</p>
-                  <p className="text-2xl font-bold">{analytics.avgAttendanceRate}%</p>
                 </div>
               </div>
             </CardContent>
@@ -451,7 +397,6 @@ const Reports = () => {
                   <SelectValue placeholder="Select report type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="attendance">Attendance Report</SelectItem>
                   <SelectItem value="leaves">Leave Report</SelectItem>
                   <SelectItem value="payroll">Payroll Report</SelectItem>
                   <SelectItem value="employees">Employee Report</SelectItem>
