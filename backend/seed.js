@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { User, Profile, Attendance, Leave } = require('./models');
+const { User, Profile, Attendance, Leave, Payroll } = require('./models');
 const { hashPassword } = require('./utils/auth');
 const { format, subDays } = require('date-fns');
 require('dotenv').config();
@@ -16,6 +16,7 @@ const seedUsers = async () => {
       await mongoose.connection.db.dropCollection('profiles');
       await mongoose.connection.db.dropCollection('attendances');
       await mongoose.connection.db.dropCollection('leaves');
+      await mongoose.connection.db.dropCollection('payrolls');
       console.log('Dropped existing collections');
     } catch (error) {
       console.log('Collections may not exist, continuing...');
@@ -219,6 +220,49 @@ const seedUsers = async () => {
     
     await Leave.insertMany(leaveRecords);
     console.log(`✅ Created ${leaveRecords.length} leave requests`);
+
+    // Create sample payroll records for the last 3 months
+    const payrollRecords = [];
+    
+    for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
+      const payrollDate = new Date();
+      payrollDate.setMonth(payrollDate.getMonth() - monthOffset);
+      const year = payrollDate.getFullYear();
+      const month = payrollDate.getMonth() + 1;
+      
+      for (const emp of employees) {
+        // Get employee profile for salary info
+        const profile = await Profile.findOne({ employee_id: emp.employee_id });
+        if (!profile || !profile.salary_structure) continue;
+        
+        const basic = profile.salary_structure.basic || 50000;
+        const hra = Math.round(basic * 0.2); // 20% of basic
+        const allowances = Math.round(basic * 0.1); // 10% of basic
+        const grossPay = basic + hra + allowances;
+        const deductions = Math.round(grossPay * 0.15); // 15% deductions
+        const netPay = grossPay - deductions;
+        
+        const payroll = new Payroll({
+          employee_id: emp.employee_id,
+          user_id: emp.user_id,
+          year: year,
+          month: month,
+          basic: basic,
+          hra: hra,
+          allowances: allowances,
+          deductions: deductions,
+          net_pay: netPay,
+          status: 'processed',
+          created_by: adminUser.user_id,
+          created_at: new Date()
+        });
+        
+        payrollRecords.push(payroll);
+      }
+    }
+    
+    await Payroll.insertMany(payrollRecords);
+    console.log(`✅ Created ${payrollRecords.length} payroll records`);
 
     console.log('✅ Demo users created successfully:');
     console.log('Admin: admin@dayflow.com / Admin123');
