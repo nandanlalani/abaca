@@ -65,9 +65,14 @@
    - **Install Command**: `npm install`
 
 4. **Environment Variables**: Add in Vercel dashboard:
+   - Go to your project settings in Vercel
+   - Navigate to "Environment Variables" tab
+   - Add the following variable:
    ```
-   REACT_APP_BACKEND_URL=https://your-backend-domain.onrender.com
+   Name: REACT_APP_BACKEND_URL
+   Value: https://payroll-nog2.onrender.com
    ```
+   - Make sure to set it for all environments (Production, Preview, Development)
 
 5. **Deploy**: Click "Deploy"
 

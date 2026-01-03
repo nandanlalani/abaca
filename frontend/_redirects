@@ -1,0 +1,9 @@
+# Netlify redirects file
+# Handle client-side routing for React Router
+/*    /index.html   200
+
+# Optional: Redirect HTTP to HTTPS (if using custom domain)
+# http://yourdomain.com/*    https://yourdomain.com/:splat    301!
+
+# Optional: Redirect www to non-www (if using custom domain)
+# https://www.yourdomain.com/*    https://yourdomain.com/:splat    301!

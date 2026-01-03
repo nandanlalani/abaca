@@ -1,33 +1,19 @@
 {
-  "version": 2,
-  "name": "dayflow-frontend",
-  "builds": [
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/static/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
-  ],
-  "env": {
-    "REACT_APP_BACKEND_URL": "@backend_url"
-  },
-  "build": {
-    "env": {
-      "REACT_APP_BACKEND_URL": "@backend_url"
-    }
-  }
+  ]
 }
