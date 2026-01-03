@@ -131,7 +131,8 @@ app.set('io', io);
 app.get('/api', (req, res) => {
   res.json({
     message: 'Dayflow HRMS API',
-    version: '1.0.0'
+    version: '1.0.1',
+    status: 'healthy'
   });
 });
 
