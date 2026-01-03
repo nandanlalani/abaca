@@ -114,34 +114,46 @@ router.get('/me', authenticate, async (req, res) => {
 // Update my profile
 router.put('/me', authenticate, async (req, res) => {
   try {
-    const updateFields = {};
-    const allowedFields = ['first_name', 'last_name', 'phone', 'address'];
+    const profile = await Profile.findOne({ user_id: req.user.user_id });
     
-    allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
-        updateFields[field] = req.body[field];
-      }
-    });
-
-    if (Object.keys(updateFields).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No fields to update'
-      });
-    }
-
-    const profile = await Profile.findOneAndUpdate(
-      { user_id: req.user.user_id },
-      { $set: updateFields },
-      { new: true }
-    );
-
     if (!profile) {
       return res.status(404).json({
         success: false,
         message: 'Profile not found'
       });
     }
+
+    // Update basic fields
+    const basicFields = ['first_name', 'last_name', 'phone', 'address'];
+    basicFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        profile[field] = req.body[field];
+      }
+    });
+
+    // Update job details
+    if (req.body.job_details) {
+      const jobFields = ['title', 'department', 'joining_date', 'employment_type'];
+      jobFields.forEach(field => {
+        if (req.body.job_details[field] !== undefined) {
+          if (!profile.job_details) profile.job_details = {};
+          profile.job_details[field] = req.body.job_details[field];
+        }
+      });
+    }
+
+    // Update emergency contact
+    if (req.body.emergency_contact) {
+      const emergencyFields = ['name', 'relationship', 'phone'];
+      emergencyFields.forEach(field => {
+        if (req.body.emergency_contact[field] !== undefined) {
+          if (!profile.emergency_contact) profile.emergency_contact = {};
+          profile.emergency_contact[field] = req.body.emergency_contact[field];
+        }
+      });
+    }
+
+    await profile.save();
 
     res.json({
       success: true,
