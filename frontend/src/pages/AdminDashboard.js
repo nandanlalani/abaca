@@ -25,14 +25,7 @@ const AdminDashboard = () => {
   }, [stats]);
 
   useEffect(() => {
-    // Add delay to prevent API call conflicts with other components
-    const timer = setTimeout(() => {
-      console.log('Current user from localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
-      console.log('Access token exists:', !!localStorage.getItem('access_token'));
-      fetchDashboardData();
-    }, 300);
-    
-    return () => clearTimeout(timer);
+    fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
