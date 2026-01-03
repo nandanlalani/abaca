@@ -41,44 +41,44 @@ const SignIn = () => {
       <div className="w-full max-w-[1100px] grid md:grid-cols-2 bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-slate-200">
         {/* Left Side: Branding/Marketing */}
         <div className="hidden md:flex flex-col justify-between p-12 bg-primary text-primary-foreground relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-blue-600 opacity-90" />
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 opacity-90" />
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
           
           <div className="relative z-10">
             <div className="flex items-center space-x-2 mb-12">
-              <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+              <div className="h-10 w-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg shadow-black/10">
                 <span className="text-white font-black text-2xl">D</span>
               </div>
               <span className="font-bold text-2xl tracking-tight text-white">Dayflow</span>
             </div>
             
-            <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6">
-              Empower Your <br />
-              <span className="text-blue-200">Workforce</span> Effortlessly.
+            <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6 tracking-tighter">
+              Manage your <br />
+              <span className="text-violet-200 underline decoration-indigo-400 decoration-4 underline-offset-8">workforce</span> with ease.
             </h1>
-            <p className="text-lg text-blue-100 max-w-sm mb-8">
-              The modern human resource management system designed for speed, clarity, and growth.
+            <p className="text-lg text-indigo-100 max-w-sm mb-10 font-medium">
+              The modern human resource management system designed for simplicity and growth.
             </p>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {[
-                'Smart Attendance Tracking',
-                'Seamless Payroll Management',
-                'Intuitive Leave Requests',
-                'Real-time Analytics'
+                'Automated Attendance Logs',
+                'One-click Payroll Generation',
+                'Intuitive Employee Lifecycle',
+                'Data-driven HR Insights'
               ].map((feature, i) => (
-                <div key={i} className="flex items-center space-x-3 text-blue-50/80">
-                  <div className="h-5 w-5 rounded-full bg-white/10 flex items-center justify-center">
-                    <div className="h-2 w-2 rounded-full bg-blue-300" />
+                <div key={i} className="flex items-center space-x-4 text-indigo-50/90 group">
+                  <div className="h-6 w-6 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
+                    <div className="h-2 w-2 rounded-full bg-indigo-300" />
                   </div>
-                  <span className="text-sm font-medium">{feature}</span>
+                  <span className="text-sm font-bold tracking-wide">{feature}</span>
                 </div>
               ))}
             </div>
           </div>
           
-          <div className="relative z-10 pt-12">
-            <p className="text-sm text-blue-200/60">© 2026 Dayflow HRMS. All rights reserved.</p>
+          <div className="relative z-10 pt-12 border-t border-white/10">
+            <p className="text-xs text-indigo-200/60 font-bold uppercase tracking-widest">© 2026 Dayflow HRMS • Built for excellence</p>
           </div>
         </div>
 

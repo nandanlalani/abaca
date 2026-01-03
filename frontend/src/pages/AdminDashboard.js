@@ -124,7 +124,7 @@ const AdminDashboard = () => {
       title: 'Total Employees',
       value: stats.totalEmployees,
       icon: Users,
-      color: 'text-blue-500',
+      color: 'bg-violet-100 text-violet-600',
       trend: '+5%',
       trendUp: true,
     },
@@ -132,7 +132,7 @@ const AdminDashboard = () => {
       title: 'Present Today',
       value: stats.presentToday,
       icon: Calendar,
-      color: 'text-green-500',
+      color: 'bg-emerald-100 text-emerald-600',
       trend: `${stats.totalEmployees > 0 ? Math.round((stats.presentToday / stats.totalEmployees) * 100) : 0}%`,
       trendUp: true,
     },
@@ -140,7 +140,7 @@ const AdminDashboard = () => {
       title: 'Pending Leaves',
       value: stats.pendingLeaves,
       icon: FileText,
-      color: 'text-orange-500',
+      color: 'bg-amber-100 text-amber-600',
       trend: stats.pendingLeaves > 5 ? 'High' : 'Normal',
       trendUp: false,
     },
@@ -148,111 +148,149 @@ const AdminDashboard = () => {
       title: 'Recent Payroll',
       value: `$${stats.thisMonthPayroll.toLocaleString()}`,
       icon: DollarSign,
-      color: 'text-purple-500',
+      color: 'bg-rose-100 text-rose-600',
       trend: '+2%',
       trendUp: true,
     },
   ];
 
-  console.log('Rendering with stats:', stats);
-  console.log('Stat cards:', statCards);
-
   return (
     <Layout>
-      <div className="space-y-6" data-testid="admin-dashboard">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Overview of your organization</p>
+      <div className="space-y-8" data-testid="admin-dashboard">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard Overview</h1>
+            <p className="text-slate-500 mt-1">Manage your organization's workforce and operations.</p>
+          </div>
+          <div className="flex items-center space-x-3">
+             <Badge variant="outline" className="px-3 py-1 bg-white shadow-sm border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                System Healthy
+             </Badge>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.title} data-testid={`stat-card-${stat.title.toLowerCase().replace(' ', '-')}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground flex items-center mt-1">
-                    {stat.trendUp ? (
-                      <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
-                    )}
-                    {stat.trend} from last month
-                  </p>
+              <Card key={stat.title} className="border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all duration-300" data-testid={`stat-card-${stat.title.toLowerCase().replace(' ', '-')}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-2xl ${stat.color} transition-transform group-hover:rotate-6`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <Badge className={`${stat.trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} border-none font-bold text-xs`}>
+                      {stat.trend}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">{stat.title}</p>
+                    <div className="text-3xl font-black text-slate-900 mt-1">{stat.value}</div>
+                  </div>
+                  <div className="mt-4 flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                     Updated 2 mins ago
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        <Tabs defaultValue="leaves" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="leaves" data-testid="tab-pending-leaves">Pending Leaves</TabsTrigger>
-            <TabsTrigger value="attendance" data-testid="tab-attendance">Recent Attendance</TabsTrigger>
-            <TabsTrigger value="employees" data-testid="tab-employees">Employees</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="leaves">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Leave Requests</CardTitle>
-                <CardDescription>Review and approve employee leave requests</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentLeaves.length > 0 ? (
-                  <div className="space-y-3">
-                    {recentLeaves.map((leave) => (
-                      <div key={leave.leave_id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{leave.employee_name || leave.employee_id}</p>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            {leave.leave_type} - {new Date(leave.start_date).toLocaleDateString()} to{' '}
-                            {new Date(leave.end_date).toLocaleDateString()}
-                          </p>
-                          {leave.remarks && (
-                            <p className="text-sm text-muted-foreground mt-1">{leave.remarks}</p>
-                          )}
-                        </div>
-                        <Badge variant="secondary">Pending</Badge>
-                      </div>
-                    ))}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+               <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-slate-900">Recent Activity</CardTitle>
+                    <CardDescription>Stay updated with the latest requests and status</CardDescription>
                   </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">No pending leave requests</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <Tabs defaultValue="leaves" className="w-auto">
+                    <TabsList className="bg-slate-200/50 rounded-xl p-1">
+                      <TabsTrigger value="leaves" className="rounded-lg px-4 py-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">Leaves</TabsTrigger>
+                      <TabsTrigger value="attendance" className="rounded-lg px-4 py-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm">Attendance</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+               </div>
+            </CardHeader>
+            <CardContent className="p-0">
+               <Tabs defaultValue="leaves">
+                 <TabsContent value="leaves" className="m-0 p-6">
+                    {recentLeaves.length > 0 ? (
+                      <div className="space-y-4">
+                        {recentLeaves.map((leave) => (
+                          <div key={leave.leave_id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-violet-200 hover:bg-violet-50/30 transition-all group">
+                            <div className="flex items-center space-x-4">
+                              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                                {leave.employee_name?.charAt(0) || 'E'}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 group-hover:text-violet-600 transition-colors">{leave.employee_name || leave.employee_id}</p>
+                                <p className="text-xs text-slate-500 font-medium capitalize mt-0.5">
+                                  {leave.leave_type} • {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                               <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">Pending</Badge>
+                               <span className="text-[10px] text-slate-400 mt-2 font-bold">Applied yesterday</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-20">
+                         <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                            <FileText className="h-8 w-8 text-slate-300" />
+                         </div>
+                         <p className="text-slate-400 font-medium">No pending leave requests</p>
+                      </div>
+                    )}
+                 </TabsContent>
+                 <TabsContent value="attendance" className="m-0 p-20 text-center">
+                    <p className="text-slate-400 font-medium">Coming soon: Real-time attendance logs</p>
+                 </TabsContent>
+               </Tabs>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="attendance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Today's Attendance</CardTitle>
-                <CardDescription>Employee attendance overview</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-muted-foreground py-8">Attendance data will appear here</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
+            <CardHeader>
+               <CardTitle className="text-xl font-bold">Quick Insights</CardTitle>
+               <CardDescription className="text-violet-100">Monthly overview at a glance</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <div className="space-y-6">
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                     <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">Payroll Efficiency</p>
+                     <div className="flex items-end justify-between">
+                        <div className="text-2xl font-black">98.2%</div>
+                        <div className="text-emerald-300 text-xs font-bold flex items-center"><TrendingUp className="h-3 w-3 mr-1" /> +1.2%</div>
+                     </div>
+                     <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div className="bg-emerald-400 h-full rounded-full" style={{ width: '98%' }} />
+                     </div>
+                  </div>
 
-          <TabsContent value="employees">
-            <Card>
-              <CardHeader>
-                <CardTitle>Employee Management</CardTitle>
-                <CardDescription>Manage your workforce</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-muted-foreground py-8">Employee list will appear here</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                     <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">Attendance Rate</p>
+                     <div className="flex items-end justify-between">
+                        <div className="text-2xl font-black">94.5%</div>
+                        <div className="text-amber-300 text-xs font-bold flex items-center"><TrendingDown className="h-3 w-3 mr-1" /> -0.8%</div>
+                     </div>
+                     <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div className="bg-amber-400 h-full rounded-full" style={{ width: '94%' }} />
+                     </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/10">
+                     <Button className="w-full bg-white text-violet-600 hover:bg-violet-50 font-bold rounded-xl shadow-lg">
+                        View Detailed Reports
+                     </Button>
+                  </div>
+               </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );
