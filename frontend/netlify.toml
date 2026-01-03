@@ -1,6 +1,6 @@
 [build]
   # Build command
-  command = "npm run build"
+  command = "npm install --legacy-peer-deps && npm run build"
   
   # Output directory
   publish = "build"
@@ -11,6 +11,9 @@
 [build.environment]
   # Node version
   NODE_VERSION = "18"
+  
+  # NPM flags for peer dependency issues
+  NPM_FLAGS = "--legacy-peer-deps"
   
   # Disable source maps for production
   GENERATE_SOURCEMAP = "false"
