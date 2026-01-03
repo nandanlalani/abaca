@@ -186,9 +186,9 @@ const AdminPayroll = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount || 0);
   };
 
@@ -426,9 +426,13 @@ const AdminPayroll = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => toast.success('Payslip download started')}
+                          onClick={() => handleDownloadSlip(payroll)}
+                          disabled={downloadingId === payroll.payroll_id}
                         >
                           <Download className="w-4 h-4" />
+                          {downloadingId === payroll.payroll_id && (
+                            <span className="ml-1">...</span>
+                          )}
                         </Button>
                       </div>
                     </TableCell>
@@ -529,9 +533,12 @@ const AdminPayroll = () => {
                   <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
                     Close
                   </Button>
-                  <Button onClick={() => toast.success('Payslip download started')}>
+                  <Button 
+                    onClick={() => handleDownloadSlip(selectedPayroll)}
+                    disabled={downloadingId === selectedPayroll?.payroll_id}
+                  >
                     <Download className="w-4 h-4 mr-2" />
-                    Download Payslip
+                    {downloadingId === selectedPayroll?.payroll_id ? 'Generating...' : 'Download Payslip'}
                   </Button>
                 </div>
               </div>

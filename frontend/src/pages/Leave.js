@@ -220,9 +220,9 @@ const Leave = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount || 0);
   };
 
@@ -243,8 +243,8 @@ const Leave = () => {
     }
 
     const unpaidDays = requestedDays - remaining;
-    // Assuming basic salary of $3000/month for calculation (this would come from profile in real implementation)
-    const dailySalary = 3000 / 30; // $100 per day
+    // Assuming basic salary of ₹250,000/month for calculation (this would come from profile in real implementation)
+    const dailySalary = 250000 / 30; // ₹8,333 per day
     const deduction = dailySalary * unpaidDays;
 
     return {
@@ -517,7 +517,7 @@ const Leave = () => {
                     <div className="text-xs text-red-700">
                       Taken: {sickLeaveUsage.allowance} days, Request: 3 days
                       <br />
-                      <span className="font-semibold">Result: 3 days deduction (~$300)</span>
+                      <span className="font-semibold">Result: 3 days deduction (~₹25,000)</span>
                     </div>
                   </div>
 
@@ -528,7 +528,7 @@ const Leave = () => {
                     <div className="text-xs text-orange-700">
                       Taken: 8 days, Request: 6 days
                       <br />
-                      <span className="font-semibold">Result: 2 days deduction (~$200)</span>
+                      <span className="font-semibold">Result: 2 days deduction (~₹16,667)</span>
                     </div>
                   </div>
                 </div>

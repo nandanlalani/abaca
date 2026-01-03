@@ -49,10 +49,10 @@ const seedUsers = async () => {
         employment_type: 'full-time'
       },
       salary_structure: {
-        basic: 80000,
-        hra: 16000,
-        allowances: 4000,
-        deductions: 2000
+        basic: 800000,
+        hra: 160000,
+        allowances: 40000,
+        deductions: 20000
       },
       emergency_contact: {
         name: 'Emergency Contact',
@@ -88,10 +88,10 @@ const seedUsers = async () => {
         employment_type: 'full-time'
       },
       salary_structure: {
-        basic: 70000,
-        hra: 14000,
-        allowances: 3500,
-        deductions: 1500
+        basic: 700000,
+        hra: 140000,
+        allowances: 35000,
+        deductions: 15000
       },
       emergency_contact: {
         name: 'HR Emergency',
@@ -127,10 +127,10 @@ const seedUsers = async () => {
         employment_type: 'full-time'
       },
       salary_structure: {
-        basic: 60000,
-        hra: 12000,
-        allowances: 3000,
-        deductions: 1000
+        basic: 600000,
+        hra: 120000,
+        allowances: 30000,
+        deductions: 10000
       },
       emergency_contact: {
         name: 'Jane Doe',
@@ -236,7 +236,7 @@ const seedUsers = async () => {
         const profile = await Profile.findOne({ employee_id: emp.employee_id });
         if (!profile || !profile.salary_structure) continue;
         
-        const basic = profile.salary_structure.basic || 50000;
+        const basic = profile.salary_structure.basic || 500000;
         const hra = Math.round(basic * 0.2); // 20% of basic
         const allowances = Math.round(basic * 0.1); // 10% of basic
         const grossPay = basic + hra + allowances;

@@ -247,13 +247,13 @@ router.post('/generate', authenticate, requireAdminOrHR, [
       // Get employee profile for salary structure
       const profile = await Profile.findOne({ employee_id: user.employee_id });
       
-      let basic = 50000; // Default basic salary
-      let hra = 10000;
-      let allowances = 2500;
-      let deductions = 1500;
+      let basic = 500000; // Default basic salary
+      let hra = 100000;
+      let allowances = 25000;
+      let deductions = 15000;
 
       if (profile && profile.salary_structure) {
-        basic = profile.salary_structure.basic || 50000;
+        basic = profile.salary_structure.basic || 500000;
         hra = Math.round(basic * 0.2); // 20% of basic
         allowances = Math.round(basic * 0.1); // 10% of basic
         const grossPay = basic + hra + allowances;
@@ -523,7 +523,7 @@ router.get('/payslip/:payroll_id', authenticate, async (req, res) => {
                         </div>
                         <div class="info-item">
                             <span class="info-label">Currency:</span>
-                            <span class="info-value">USD</span>
+                            <span class="info-value">INR</span>
                         </div>
                     </div>
                 </div>
@@ -533,19 +533,19 @@ router.get('/payslip/:payroll_id', authenticate, async (req, res) => {
                         <div class="section-title earnings-title">Earnings</div>
                         <div class="item-row">
                             <span>Basic Salary</span>
-                            <span>$${payroll.basic.toLocaleString()}</span>
+                            <span>₹${payroll.basic.toLocaleString()}</span>
                         </div>
                         <div class="item-row">
                             <span>House Rent Allowance (HRA)</span>
-                            <span>$${payroll.hra.toLocaleString()}</span>
+                            <span>₹${payroll.hra.toLocaleString()}</span>
                         </div>
                         <div class="item-row">
                             <span>Other Allowances</span>
-                            <span>$${payroll.allowances.toLocaleString()}</span>
+                            <span>₹${payroll.allowances.toLocaleString()}</span>
                         </div>
                         <div class="item-row total-row">
                             <span>Gross Earnings</span>
-                            <span>$${grossPay.toLocaleString()}</span>
+                            <span>₹${grossPay.toLocaleString()}</span>
                         </div>
                     </div>
 
@@ -553,25 +553,25 @@ router.get('/payslip/:payroll_id', authenticate, async (req, res) => {
                         <div class="section-title deductions-title">Deductions</div>
                         <div class="item-row">
                             <span>Income Tax</span>
-                            <span>$${Math.round(payroll.deductions * 0.7).toLocaleString()}</span>
+                            <span>₹${Math.round(payroll.deductions * 0.7).toLocaleString()}</span>
                         </div>
                         <div class="item-row">
                             <span>Social Security</span>
-                            <span>$${Math.round(payroll.deductions * 0.2).toLocaleString()}</span>
+                            <span>₹${Math.round(payroll.deductions * 0.2).toLocaleString()}</span>
                         </div>
                         <div class="item-row">
                             <span>Other Deductions</span>
-                            <span>$${Math.round(payroll.deductions * 0.1).toLocaleString()}</span>
+                            <span>₹${Math.round(payroll.deductions * 0.1).toLocaleString()}</span>
                         </div>
                         <div class="item-row total-row">
                             <span>Total Deductions</span>
-                            <span>$${payroll.deductions.toLocaleString()}</span>
+                            <span>₹${payroll.deductions.toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="net-pay">
-                    NET PAY: $${payroll.net_pay.toLocaleString()}
+                    NET PAY: ₹${payroll.net_pay.toLocaleString()}
                 </div>
 
                 <div class="footer">

@@ -173,7 +173,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Recent Payroll',
-      value: `$${stats.thisMonthPayroll.toLocaleString()}`,
+      value: `₹${stats.thisMonthPayroll.toLocaleString()}`,
       icon: DollarSign,
       color: 'bg-rose-100 text-rose-600',
       trend: '+2%',

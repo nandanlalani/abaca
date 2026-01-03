@@ -383,7 +383,7 @@ const Employees = () => {
                 <div>
                   <Label className="text-sm font-medium">Basic Salary</Label>
                   <p className="text-sm text-muted-foreground">
-                    ${selectedEmployee.salary_structure?.basic?.toLocaleString() || 'N/A'}
+                    ₹{selectedEmployee.salary_structure?.basic?.toLocaleString() || 'N/A'}
                   </p>
                 </div>
                 <div className="col-span-2">
