@@ -19,6 +19,11 @@ import api from '../utils/api';
 const Leave = () => {
   const [leaves, setLeaves] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState({});
+  const [sickLeaveUsage, setSickLeaveUsage] = useState({
+    allowance: 12,
+    taken: 0,
+    remaining: 12
+  });
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -31,9 +36,51 @@ const Leave = () => {
   });
 
   useEffect(() => {
-    fetchLeaves();
-    fetchLeaveBalance();
+    const loadData = async () => {
+      await fetchLeaves();
+      await fetchLeaveBalance();
+      await fetchSickLeaveUsage();
+    };
+    loadData();
   }, []);
+
+  const fetchSickLeaveUsage = async () => {
+    try {
+      // Get current year's approved sick leaves
+      const currentYear = new Date().getFullYear();
+      const response = await api.get('/leaves/me');
+      
+      if (response.data.success) {
+        const allLeaves = response.data.leaves;
+        const approvedSickLeaves = allLeaves.filter(leave => 
+          leave.leave_type === 'sick' && 
+          leave.status === 'approved' &&
+          new Date(leave.start_date).getFullYear() === currentYear
+        );
+
+        const takenDays = approvedSickLeaves.reduce((total, leave) => {
+          return total + calculateDays(leave.start_date, leave.end_date);
+        }, 0);
+
+        // Use the allowance from leaveBalance state, fallback to 12
+        const allowance = leaveBalance.sick || 12;
+        setSickLeaveUsage({
+          allowance,
+          taken: takenDays,
+          remaining: Math.max(0, allowance - takenDays)
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch sick leave usage:', error);
+      // Set default values
+      const allowance = leaveBalance.sick || 12;
+      setSickLeaveUsage({
+        allowance,
+        taken: 0,
+        remaining: allowance
+      });
+    }
+  };
 
   const fetchLeaves = async () => {
     try {
@@ -53,6 +100,11 @@ const Leave = () => {
       const response = await api.get('/profiles/leave-balance');
       if (response.data.success) {
         setLeaveBalance(response.data.balance);
+        // Update sick leave usage with the correct allowance
+        setSickLeaveUsage(prev => ({
+          ...prev,
+          allowance: response.data.balance.sick || 12
+        }));
       }
     } catch (error) {
       console.error('Failed to fetch leave balance:', error);
@@ -93,6 +145,10 @@ const Leave = () => {
           remarks: ''
         });
         fetchLeaves();
+        // Refresh sick leave usage if it was a sick leave request
+        if (formData.leave_type === 'sick') {
+          fetchSickLeaveUsage();
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit leave request');
@@ -168,6 +224,34 @@ const Leave = () => {
       style: 'currency',
       currency: 'USD'
     }).format(amount || 0);
+  };
+
+  const calculatePotentialDeduction = () => {
+    if (formData.leave_type !== 'sick' || !formData.start_date || !formData.end_date) {
+      return null;
+    }
+
+    const requestedDays = calculateDays(formData.start_date, formData.end_date);
+    const { remaining } = sickLeaveUsage;
+    
+    if (requestedDays <= remaining) {
+      return {
+        deduction: 0,
+        unpaidDays: 0,
+        message: `No deduction - within allowance (${remaining} days remaining)`
+      };
+    }
+
+    const unpaidDays = requestedDays - remaining;
+    // Assuming basic salary of $3000/month for calculation (this would come from profile in real implementation)
+    const dailySalary = 3000 / 30; // $100 per day
+    const deduction = dailySalary * unpaidDays;
+
+    return {
+      deduction,
+      unpaidDays,
+      message: `${unpaidDays} unpaid days (exceeds remaining ${remaining} days)`
+    };
   };
 
   const leaveStats = {
@@ -267,6 +351,32 @@ const Leave = () => {
                     <p className="text-sm text-blue-700">
                       Total days: {calculateDays(formData.start_date, formData.end_date)} day(s)
                     </p>
+                    {formData.leave_type === 'sick' && (
+                      (() => {
+                        const calculation = calculatePotentialDeduction();
+                        return calculation ? (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            {calculation.deduction > 0 ? (
+                              <div className="text-red-700">
+                                <div className="flex items-center">
+                                  <AlertCircle className="w-4 h-4 mr-1" />
+                                  <span className="font-semibold">Salary Impact: {formatCurrency(calculation.deduction)}</span>
+                                </div>
+                                <p className="text-xs mt-1">{calculation.message}</p>
+                              </div>
+                            ) : (
+                              <div className="text-green-700">
+                                <div className="flex items-center">
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  <span className="font-semibold">No salary deduction</span>
+                                </div>
+                                <p className="text-xs mt-1">{calculation.message}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : null;
+                      })()
+                    )}
                   </div>
                 )}
 
@@ -349,6 +459,120 @@ const Leave = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Sick Leave Balance Section */}
+        <Card className="border-l-4 border-l-red-500">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <DollarSign className="w-5 h-5 mr-2 text-red-600" />
+              Sick Leave Balance & Salary Impact
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Current Balance */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-700">Current Year Balance</h4>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Total Allowance:</span>
+                    <span className="font-bold">{sickLeaveUsage.allowance} days</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Used:</span>
+                    <span className="font-bold text-red-600">{sickLeaveUsage.taken} days</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Remaining:</span>
+                    <span className="font-bold text-green-600">{sickLeaveUsage.remaining} days</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                    <div 
+                      className="bg-red-500 h-2 rounded-full" 
+                      style={{ width: `${(sickLeaveUsage.taken / sickLeaveUsage.allowance) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Salary Deduction Examples */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-700">Deduction Examples</h4>
+                <div className="space-y-2">
+                  <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+                    <div className="text-xs font-medium text-green-800 mb-1">
+                      Scenario 1: Within Allowance
+                    </div>
+                    <div className="text-xs text-green-700">
+                      Taken: {sickLeaveUsage.taken} days, Request: 1 day
+                      <br />
+                      <span className="font-semibold">Result: No deduction</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                    <div className="text-xs font-medium text-red-800 mb-1">
+                      Scenario 2: Exceeds Allowance
+                    </div>
+                    <div className="text-xs text-red-700">
+                      Taken: {sickLeaveUsage.allowance} days, Request: 3 days
+                      <br />
+                      <span className="font-semibold">Result: 3 days deduction (~$300)</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
+                    <div className="text-xs font-medium text-orange-800 mb-1">
+                      Scenario 3: Partial Deduction
+                    </div>
+                    <div className="text-xs text-orange-700">
+                      Taken: 8 days, Request: 6 days
+                      <br />
+                      <span className="font-semibold">Result: 2 days deduction (~$200)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-time Calculation */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-700">Current Request Impact</h4>
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  {formData.leave_type === 'sick' && formData.start_date && formData.end_date ? (
+                    (() => {
+                      const calculation = calculatePotentialDeduction();
+                      return calculation ? (
+                        <div>
+                          <div className="text-sm font-medium text-blue-800 mb-2">
+                            Requesting: {calculateDays(formData.start_date, formData.end_date)} day(s)
+                          </div>
+                          {calculation.deduction > 0 ? (
+                            <div className="text-red-700">
+                              <div className="font-bold text-lg">{formatCurrency(calculation.deduction)}</div>
+                              <div className="text-xs">{calculation.message}</div>
+                            </div>
+                          ) : (
+                            <div className="text-green-700">
+                              <div className="font-bold">No Deduction</div>
+                              <div className="text-xs">{calculation.message}</div>
+                            </div>
+                          )}
+                        </div>
+                      ) : null;
+                    })()
+                  ) : (
+                    <div className="text-sm text-blue-600">
+                      {formData.leave_type === 'sick' 
+                        ? 'Select dates to see salary impact'
+                        : 'Select sick leave to see salary impact'
+                      }
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Leave Requests Table */}
         <Card>

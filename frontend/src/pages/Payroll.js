@@ -13,6 +13,7 @@ import api from '../utils/api';
 const Payroll = () => {
   const [payrolls, setPayrolls] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
@@ -64,11 +65,40 @@ const Payroll = () => {
 
   const handleDownloadSlip = async (payroll) => {
     try {
-      // This would typically generate and download a PDF
-      toast.success('Payslip download started');
-      // Implementation for PDF generation would go here
+      setDownloadingId(payroll.payroll_id);
+      toast.success('Generating payslip...');
+      
+      // Create a temporary link to download the file
+      const response = await api.get(`/payroll/payslip/${payroll.payroll_id}`, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate a more descriptive filename
+      const monthName = getMonthName(payroll.month);
+      link.download = `Payslip_${monthName}_${payroll.year}_${payroll.employee_id || 'Employee'}.html`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Payslip downloaded successfully! You can open it in your browser or print it.');
     } catch (error) {
-      toast.error('Failed to download payslip');
+      console.error('Download error:', error);
+      if (error.response?.status === 404) {
+        toast.error('Payroll record not found.');
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied. You can only download your own payslips.');
+      } else {
+        toast.error('Failed to download payslip. Please try again.');
+      }
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -241,8 +271,12 @@ const Payroll = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDownloadSlip(payroll)}
+                          disabled={downloadingId === payroll.payroll_id}
                         >
                           <Download className="w-4 h-4" />
+                          {downloadingId === payroll.payroll_id && (
+                            <span className="ml-1">...</span>
+                          )}
                         </Button>
                       </div>
                     </TableCell>
@@ -328,9 +362,12 @@ const Payroll = () => {
                   <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
                     Close
                   </Button>
-                  <Button onClick={() => handleDownloadSlip(selectedPayroll)}>
+                  <Button 
+                    onClick={() => handleDownloadSlip(selectedPayroll)}
+                    disabled={downloadingId === selectedPayroll?.payroll_id}
+                  >
                     <Download className="w-4 h-4 mr-2" />
-                    Download Payslip
+                    {downloadingId === selectedPayroll?.payroll_id ? 'Generating...' : 'Download Payslip'}
                   </Button>
                 </div>
               </div>
