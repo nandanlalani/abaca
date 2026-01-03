@@ -22,6 +22,7 @@ const server = createServer(app);
 const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
   'http://localhost:3000', 
   'http://localhost:3001',
+  'http://localhost:3002',
   'http://localhost:5000',
   /\.replit\.dev$/,
   /\.repl\.co$/
@@ -37,6 +38,15 @@ const io = new Server(server, {
 
 // Middleware
 app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
 
 app.use(cors({
   origin: function(origin, callback) {

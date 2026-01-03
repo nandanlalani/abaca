@@ -16,7 +16,7 @@ const AdminDashboard = () => {
     thisMonthPayroll: 0,
   });
   const [recentLeaves, setRecentLeaves] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [recentAttendance, setRecentAttendance] = useState([]);
 
   console.log('Component rendered with stats:', stats);
 
@@ -61,6 +61,21 @@ const AdminDashboard = () => {
       const presentToday = attendanceRes.data.success ? 
         attendanceRes.data.attendance.filter((a) => a.status === 'present').length : 0;
       console.log('Present today calculated:', presentToday);
+      
+      // Store recent attendance data for display with employee names
+      if (attendanceRes.data.success && employeesRes.data.success) {
+        const employeeMap = {};
+        employeesRes.data.employees.forEach(emp => {
+          employeeMap[emp.employee_id] = `${emp.first_name} ${emp.last_name}`;
+        });
+        
+        const attendanceWithNames = attendanceRes.data.attendance.map(att => ({
+          ...att,
+          employee_name: employeeMap[att.employee_id] || att.employee_id
+        }));
+        
+        setRecentAttendance(attendanceWithNames.slice(0, 10));
+      }
 
       // Fetch pending leaves
       console.log('3. Fetching pending leaves...');
@@ -79,22 +94,41 @@ const AdminDashboard = () => {
         const payrollRes = await api.get('/payroll');
         console.log('Payroll API response:', payrollRes.data);
         if (payrollRes.data.success && payrollRes.data.payrolls.length > 0) {
-          // Get the most recent month's payroll instead of current month
           const payrolls = payrollRes.data.payrolls;
-          const mostRecentPayroll = payrolls.reduce((latest, current) => {
-            const latestDate = new Date(latest.year, latest.month - 1);
-            const currentDate = new Date(current.year, current.month - 1);
-            return currentDate > latestDate ? current : latest;
-          });
+          console.log('Total payroll records found:', payrolls.length);
           
-          console.log('Most recent payroll month:', mostRecentPayroll.month, mostRecentPayroll.year);
-          
-          // Sum all payrolls for the most recent month
-          thisMonthPayroll = payrolls
-            .filter(p => p.month === mostRecentPayroll.month && p.year === mostRecentPayroll.year)
-            .reduce((total, p) => total + (p.net_pay || 0), 0);
-          
-          console.log('Most recent month payroll calculated:', thisMonthPayroll);
+          if (payrolls.length > 0) {
+            // Group payrolls by month/year and find the most recent
+            const payrollsByMonth = {};
+            payrolls.forEach(p => {
+              const key = `${p.year}-${p.month}`;
+              if (!payrollsByMonth[key]) {
+                payrollsByMonth[key] = [];
+              }
+              payrollsByMonth[key].push(p);
+            });
+            
+            // Find the most recent month with data
+            const monthKeys = Object.keys(payrollsByMonth).sort((a, b) => {
+              const [yearA, monthA] = a.split('-').map(Number);
+              const [yearB, monthB] = b.split('-').map(Number);
+              const dateA = new Date(yearA, monthA - 1);
+              const dateB = new Date(yearB, monthB - 1);
+              return dateB - dateA; // Sort descending (most recent first)
+            });
+            
+            if (monthKeys.length > 0) {
+              const mostRecentKey = monthKeys[0];
+              const [year, month] = mostRecentKey.split('-').map(Number);
+              console.log('Most recent payroll month/year:', month, year);
+              
+              // Sum all payrolls for the most recent month
+              thisMonthPayroll = payrollsByMonth[mostRecentKey]
+                .reduce((total, p) => total + (p.net_pay || 0), 0);
+              
+              console.log('Most recent month payroll calculated:', thisMonthPayroll);
+            }
+          }
         }
       } catch (payrollError) {
         console.log('Payroll error:', payrollError.message);
@@ -116,8 +150,6 @@ const AdminDashboard = () => {
       console.error('Error details:', error.response?.data);
       console.error('Error status:', error.response?.status);
       toast.error(`Failed to load dashboard data: ${error.response?.data?.message || error.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -248,8 +280,49 @@ const AdminDashboard = () => {
                       </div>
                     )}
                  </TabsContent>
-                 <TabsContent value="attendance" className="m-0 p-20 text-center">
-                    <p className="text-slate-400 font-medium">Coming soon: Real-time attendance logs</p>
+                 <TabsContent value="attendance" className="m-0 p-6">
+                    {recentAttendance.length > 0 ? (
+                      <div className="space-y-4">
+                        {recentAttendance.map((attendance) => (
+                          <div key={`${attendance.employee_id}-${attendance.date}`} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-violet-200 hover:bg-violet-50/30 transition-all group">
+                            <div className="flex items-center space-x-4">
+                              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                                {attendance.employee_name?.charAt(0) || attendance.employee_id?.charAt(0) || 'E'}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 group-hover:text-violet-600 transition-colors">
+                                  {attendance.employee_name || attendance.employee_id}
+                                </p>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                  {attendance.check_in ? new Date(attendance.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Not checked in'}
+                                  {attendance.check_out && ` - ${new Date(attendance.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                               <Badge className={`${
+                                 attendance.status === 'present' ? 'bg-emerald-100 text-emerald-700' :
+                                 attendance.status === 'absent' ? 'bg-red-100 text-red-700' :
+                                 attendance.status === 'late' ? 'bg-amber-100 text-amber-700' :
+                                 'bg-slate-100 text-slate-700'
+                               } hover:bg-current border-none px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest`}>
+                                 {attendance.status}
+                               </Badge>
+                               <span className="text-[10px] text-slate-400 mt-2 font-bold">
+                                 {attendance.total_minutes ? `${Math.floor(attendance.total_minutes / 60)}h ${attendance.total_minutes % 60}m` : 'In progress'}
+                               </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-20">
+                         <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                            <Calendar className="h-8 w-8 text-slate-300" />
+                         </div>
+                         <p className="text-slate-400 font-medium">No attendance records for today</p>
+                      </div>
+                    )}
                  </TabsContent>
                </Tabs>
             </CardContent>
