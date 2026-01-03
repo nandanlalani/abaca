@@ -32,34 +32,47 @@ router.post('/', authenticate, [
       start_date: new Date(start_date),
       end_date: new Date(end_date),
       remarks,
+      created_by: req.user.user_id,
       history: [{
         action: 'applied',
-        actor_id: req.user.user_id
+        actor_id: req.user.user_id,
+        timestamp: new Date()
       }]
     });
 
     await leave.save();
 
-    // Notify admin and HR users
-    const adminUsers = await User.find({
-      role: { $in: ['admin', 'hr'] }
-    }).select('user_id');
+    // Notify admin and HR users - with error handling
+    try {
+      const adminUsers = await User.find({
+        role: { $in: ['admin', 'hr'] }
+      }).select('user_id');
 
-    const io = req.app.get('io');
-    
-    for (const admin of adminUsers) {
-      const notification = new Notification({
-        user_id: admin.user_id,
-        type: 'leave_request',
-        title: 'New Leave Request',
-        message: `Employee ${req.user.employee_id} applied for ${leave_type} leave`,
-        metadata: { leave_id: leave.leave_id }
-      });
+      const io = req.app.get('io');
       
-      await notification.save();
-      
-      // Emit real-time notification
-      io.to(admin.user_id).emit('notification', notification);
+      for (const admin of adminUsers) {
+        try {
+          const notification = new Notification({
+            user_id: admin.user_id,
+            type: 'leave_request',
+            title: 'New Leave Request',
+            message: `Employee ${req.user.employee_id} applied for ${leave_type} leave`,
+            metadata: { leave_id: leave.leave_id }
+          });
+          
+          await notification.save();
+          
+          // Emit real-time notification - with error handling
+          if (io) {
+            io.to(admin.user_id).emit('notification', notification);
+          }
+        } catch (notificationError) {
+          console.error('Failed to create notification for admin:', admin.user_id, notificationError);
+        }
+      }
+    } catch (notificationError) {
+      console.error('Failed to send notifications:', notificationError);
+      // Don't fail the leave request if notifications fail
     }
 
     res.status(201).json({
@@ -172,36 +185,54 @@ router.put('/:leave_id', authenticate, requireAdminOrHR, [
     const historyEntry = {
       action: status,
       actor_id: req.user.user_id,
-      comment: remarks
+      comment: remarks,
+      timestamp: new Date()
     };
 
     leave.status = status;
     leave.approver_id = req.user.user_id;
     leave.approver_comment = remarks;
     leave.admin_remarks = remarks; // Add this field for frontend compatibility
+    if (!leave.history) leave.history = [];
     leave.history.push(historyEntry);
     
     await leave.save();
 
-    // Send email notification
-    const user = await User.findOne({ employee_id: leave.employee_id }).select('email');
-    if (user) {
-      await sendLeaveNotification(user.email, status, remarks);
+    // Send notifications - with error handling
+    try {
+      // Send email notification
+      const user = await User.findOne({ employee_id: leave.employee_id }).select('email');
+      if (user && user.email) {
+        try {
+          await sendLeaveNotification(user.email, status, remarks);
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+        }
+      }
+
+      // Create in-app notification
+      try {
+        const notification = new Notification({
+          user_id: leave.user_id,
+          type: 'leave_update',
+          title: `Leave Request ${status.toUpperCase()}`,
+          message: `Your leave request has been ${status}`,
+          metadata: { leave_id, status }
+        });
+        await notification.save();
+
+        // Emit real-time notification
+        const io = req.app.get('io');
+        if (io) {
+          io.to(leave.user_id).emit('notification', notification);
+        }
+      } catch (notificationError) {
+        console.error('Failed to create in-app notification:', notificationError);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send notifications:', notificationError);
+      // Don't fail the leave update if notifications fail
     }
-
-    // Create in-app notification
-    const notification = new Notification({
-      user_id: leave.user_id,
-      type: 'leave_update',
-      title: `Leave Request ${status.toUpperCase()}`,
-      message: `Your leave request has been ${status}`,
-      metadata: { leave_id, status }
-    });
-    await notification.save();
-
-    // Emit real-time notification
-    const io = req.app.get('io');
-    io.to(leave.user_id).emit('notification', notification);
 
     res.json({
       success: true,
