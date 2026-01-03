@@ -46,13 +46,20 @@ const AdminDashboard = () => {
       const totalEmployees = employeesRes.data.success ? employeesRes.data.employees.length : 0;
       console.log('Total employees calculated:', totalEmployees);
 
-      // Fetch today's attendance
-      const today = new Date().toISOString().split('T')[0];
-      console.log('2. Fetching attendance for date:', today);
-      const attendanceRes = await api.get(`/attendance?start_date=${today}&end_date=${today}`);
+      // Fetch recent attendance (last 7 days)
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      const todayStr = today.toISOString().split('T')[0];
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+      
+      console.log('2. Fetching attendance for date range:', sevenDaysAgoStr, 'to', todayStr);
+      const attendanceRes = await api.get(`/attendance?start_date=${sevenDaysAgoStr}&end_date=${todayStr}`);
       console.log('Attendance API response:', attendanceRes.data);
+      
+      // Calculate present today from the fetched data
       const presentToday = attendanceRes.data.success ? 
-        attendanceRes.data.attendance.filter((a) => a.status === 'present').length : 0;
+        attendanceRes.data.attendance.filter((a) => a.status === 'present' && a.date === todayStr).length : 0;
       console.log('Present today calculated:', presentToday);
       
       // Store recent attendance data for display with employee names
@@ -67,7 +74,9 @@ const AdminDashboard = () => {
           employee_name: employeeMap[att.employee_id] || att.employee_id
         }));
         
-        setRecentAttendance(attendanceWithNames.slice(0, 10));
+        // Sort by date descending and take the most recent 10 records
+        const sortedAttendance = attendanceWithNames.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setRecentAttendance(sortedAttendance.slice(0, 10));
       }
 
       // Fetch pending leaves
@@ -287,6 +296,7 @@ const AdminDashboard = () => {
                                   {attendance.employee_name || attendance.employee_id}
                                 </p>
                                 <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                  {new Date(attendance.date).toLocaleDateString()} • 
                                   {attendance.check_in ? new Date(attendance.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Not checked in'}
                                   {attendance.check_out && ` - ${new Date(attendance.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}
                                 </p>
@@ -313,7 +323,7 @@ const AdminDashboard = () => {
                          <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
                             <Calendar className="h-8 w-8 text-slate-300" />
                          </div>
-                         <p className="text-slate-400 font-medium">No attendance records for today</p>
+                         <p className="text-slate-400 font-medium">No recent attendance records</p>
                       </div>
                     )}
                  </TabsContent>
@@ -348,12 +358,6 @@ const AdminDashboard = () => {
                      <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
                         <div className="bg-amber-400 h-full rounded-full" style={{ width: '94%' }} />
                      </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-white/10">
-                     <Button className="w-full bg-white text-violet-600 hover:bg-violet-50 font-bold rounded-xl shadow-lg">
-                        View Detailed Reports
-                     </Button>
                   </div>
                </div>
             </CardContent>
