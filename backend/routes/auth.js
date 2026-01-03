@@ -202,71 +202,6 @@ router.post('/signin', [
   }
 });
 
-// Test email endpoint (remove in production)
-router.post('/test-email', async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
-      });
-    }
-
-    console.log('Testing email with config:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      from: process.env.FROM_EMAIL
-    });
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-
-    // Test connection
-    await transporter.verify();
-    console.log('SMTP connection verified successfully');
-
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
-      to: email,
-      subject: 'Test Email - Dayflow HRMS',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Test Email</h2>
-          <p>This is a test email from Dayflow HRMS.</p>
-          <p>If you received this, SMTP is working correctly!</p>
-          <p>Time: ${new Date().toLocaleString()}</p>
-        </div>
-      `
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    console.log('Test email sent successfully:', result.messageId);
-
-    res.json({
-      success: true,
-      message: 'Test email sent successfully',
-      messageId: result.messageId
-    });
-  } catch (error) {
-    console.error('Test email error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send test email',
-      error: error.message
-    });
-  }
-});
-
 // Send OTP for password reset
 router.post('/send-otp', [
   body('email').isEmail().withMessage('Valid email is required')
@@ -333,6 +268,15 @@ router.post('/verify-otp', [
 
     const { email, otp } = req.body;
 
+    // First check if user exists in our system
+    const userExists = await User.findOne({ email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email not found in our system. Please contact your administrator.'
+      });
+    }
+
     const user = await User.findOne({
       email,
       reset_otp: otp,
@@ -377,6 +321,15 @@ router.post('/reset-password-otp', [
 
     const { email, otp, new_password } = req.body;
 
+    // First check if user exists in our system
+    const userExists = await User.findOne({ email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Email not found in our system. Please contact your administrator.'
+      });
+    }
+
     const user = await User.findOne({
       email,
       reset_otp: otp,
@@ -413,15 +366,24 @@ router.post('/forgot-password', [
   body('email').isEmail().withMessage('Valid email is required')
 ], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const { email } = req.body;
 
     const user = await User.findOne({ email });
     
     if (!user) {
-      // Don't reveal if email exists
-      return res.json({
-        success: true,
-        message: 'If email exists, reset link has been sent'
+      // Security: Don't reveal if email exists or not, but be clear about company policy
+      return res.status(404).json({
+        success: false,
+        message: 'Email not found in our system. Please contact your administrator.'
       });
     }
 
@@ -476,6 +438,15 @@ router.post('/reset-password', [
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Additional check: Ensure user is still in our system
+    const userExists = await User.findOne({ email: user.email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found. Please contact your administrator.'
       });
     }
 
