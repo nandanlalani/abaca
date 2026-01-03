@@ -284,6 +284,128 @@ router.post('/reset-password', [
   }
 });
 
+// Add Employee (Admin only)
+router.post('/add-employee', [
+  body('first_name').notEmpty().withMessage('First name is required'),
+  body('last_name').notEmpty().withMessage('Last name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('role').optional().isIn(['admin', 'hr', 'employee']).withMessage('Invalid role'),
+  body('department').notEmpty().withMessage('Department is required'),
+  body('job_title').notEmpty().withMessage('Job title is required'),
+  body('basic_salary').isNumeric().withMessage('Basic salary must be a number')
+], authenticate, async (req, res) => {
+  try {
+    // Check if user is admin or hr
+    if (!['admin', 'hr'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin or HR role required.'
+      });
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { 
+      first_name, 
+      last_name, 
+      email, 
+      password, 
+      role, 
+      department, 
+      job_title, 
+      basic_salary 
+    } = req.body;
+
+    // Generate employee ID (you can customize this logic)
+    const employeeCount = await User.countDocuments();
+    const employee_id = `EMP${String(employeeCount + 1).padStart(4, '0')}`;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already registered'
+      });
+    }
+
+    // Hash password and generate verification token
+    const password_hash = await hashPassword(password);
+    const verification_token = generateVerificationToken();
+
+    // Create user
+    const user = new User({
+      employee_id,
+      email,
+      password_hash,
+      role: role || 'employee',
+      verification_token,
+      is_verified: true // Auto-verify admin-created accounts
+    });
+
+    await user.save();
+
+    // Create profile
+    const profile = new Profile({
+      user_id: user.user_id,
+      employee_id: user.employee_id,
+      first_name,
+      last_name,
+      job_details: {
+        title: job_title,
+        department,
+        joining_date: new Date(),
+        employment_type: 'full-time'
+      },
+      salary_structure: {
+        basic: parseFloat(basic_salary),
+        hra: 0,
+        allowances: 0,
+        deductions: 0
+      }
+    });
+
+    await profile.save();
+
+    // Send welcome email with credentials
+    try {
+      await sendVerificationEmail(email, verification_token);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the entire operation if email fails
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Employee added successfully',
+      employee: {
+        user_id: user.user_id,
+        employee_id: user.employee_id,
+        email: user.email,
+        role: user.role,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        department: profile.job_details.department,
+        job_title: profile.job_details.title
+      }
+    });
+  } catch (error) {
+    console.error('Add employee error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Get current user
 router.get('/me', authenticate, async (req, res) => {
   try {

@@ -68,7 +68,7 @@ const Employees = () => {
   const handleAddEmployee = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/signup', newEmployee);
+      const response = await api.post('/auth/add-employee', newEmployee);
       if (response.data.success) {
         toast.success('Employee added successfully');
         setIsAddDialogOpen(false);
@@ -183,31 +183,34 @@ const Employees = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">Department *</Label>
                     <Input
                       id="department"
                       value={newEmployee.department}
                       onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})}
+                      required
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="job_title">Job Title</Label>
+                    <Label htmlFor="job_title">Job Title *</Label>
                     <Input
                       id="job_title"
                       value={newEmployee.job_title}
                       onChange={(e) => setNewEmployee({...newEmployee, job_title: e.target.value})}
+                      required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="basic_salary">Basic Salary</Label>
+                    <Label htmlFor="basic_salary">Basic Salary *</Label>
                     <Input
                       id="basic_salary"
                       type="number"
                       value={newEmployee.basic_salary}
                       onChange={(e) => setNewEmployee({...newEmployee, basic_salary: e.target.value})}
+                      required
                     />
                   </div>
                 </div>
