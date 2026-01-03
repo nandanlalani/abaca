@@ -16,6 +16,7 @@ const AdminPayroll = () => {
   const [payrolls, setPayrolls] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -133,6 +134,46 @@ const AdminPayroll = () => {
   const handleViewDetails = (payroll) => {
     setSelectedPayroll(payroll);
     setIsDetailDialogOpen(true);
+  };
+
+  const handleDownloadSlip = async (payroll) => {
+    try {
+      setDownloadingId(payroll.payroll_id);
+      toast.success('Generating payslip...');
+      
+      // Create a temporary link to download the file
+      const response = await api.get(`/payroll/payslip/${payroll.payroll_id}`, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate a more descriptive filename
+      const monthName = getMonthName(payroll.month);
+      const employeeName = getEmployeeName(payroll.employee_id).replace(/\s+/g, '_');
+      link.download = `Payslip_${employeeName}_${monthName}_${payroll.year}.html`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Payslip downloaded successfully! You can open it in your browser or print it.');
+    } catch (error) {
+      console.error('Download error:', error);
+      if (error.response?.status === 404) {
+        toast.error('Payroll record not found.');
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied.');
+      } else {
+        toast.error('Failed to download payslip. Please try again.');
+      }
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const getEmployeeName = (employeeId) => {
