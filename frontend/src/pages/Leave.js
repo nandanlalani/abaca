@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Calendar } from '../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { toast } from 'sonner';
-import { Plus, Calendar as CalendarIcon, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, CheckCircle, XCircle, AlertCircle, Eye, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../utils/api';
 
@@ -21,6 +21,8 @@ const Leave = () => {
   const [leaveBalance, setLeaveBalance] = useState({});
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState(null);
   const [formData, setFormData] = useState({
     leave_type: '',
     start_date: null,
@@ -154,6 +156,18 @@ const Leave = () => {
     } catch (error) {
       return 0;
     }
+  };
+
+  const handleViewDetails = (leave) => {
+    setSelectedLeave(leave);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
   };
 
   const leaveStats = {
@@ -351,7 +365,7 @@ const Leave = () => {
                   <TableHead>Days</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Applied On</TableHead>
-                  <TableHead>Remarks</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -365,7 +379,16 @@ const Leave = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(leave.status)}</TableCell>
                     <TableCell>{formatDate(leave.created_at)}</TableCell>
-                    <TableCell className="max-w-xs truncate">{leave.remarks || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(leave)}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {leaves.length === 0 && (
@@ -379,6 +402,111 @@ const Leave = () => {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Leave Details Dialog */}
+        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Leave Request Details</DialogTitle>
+            </DialogHeader>
+            {selectedLeave && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Employee</Label>
+                    <p className="text-sm font-semibold">{selectedLeave.employee_name || selectedLeave.employee_id}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Leave Type</Label>
+                    <div className="mt-1">
+                      {getLeaveTypeBadge(selectedLeave.leave_type)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
+                    <p className="text-sm font-semibold">{formatDate(selectedLeave.start_date)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">End Date</Label>
+                    <p className="text-sm font-semibold">{formatDate(selectedLeave.end_date)}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Duration</Label>
+                    <p className="text-sm font-semibold">
+                      {calculateDays(selectedLeave.start_date, selectedLeave.end_date)} day(s)
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                    <div className="mt-1">
+                      {getStatusBadge(selectedLeave.status)}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedLeave.remarks && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Employee Remarks</Label>
+                    <p className="text-sm bg-gray-50 p-3 rounded-lg mt-1">{selectedLeave.remarks}</p>
+                  </div>
+                )}
+
+                {selectedLeave.admin_remarks && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Admin Remarks</Label>
+                    <p className="text-sm bg-gray-50 p-3 rounded-lg mt-1">{selectedLeave.admin_remarks}</p>
+                  </div>
+                )}
+
+                {/* Salary Deduction Section - Only show for sick leave */}
+                {selectedLeave.leave_type === 'sick' && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-center mb-3">
+                      <DollarSign className="w-5 h-5 text-red-600 mr-2" />
+                      <Label className="text-sm font-medium text-red-600">Salary Impact</Label>
+                    </div>
+                    
+                    {selectedLeave.salary_deduction > 0 ? (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-red-800">Salary Deduction:</span>
+                          <span className="text-lg font-bold text-red-600">
+                            {formatCurrency(selectedLeave.salary_deduction)}
+                          </span>
+                        </div>
+                        {selectedLeave.deduction_reason && (
+                          <p className="text-xs text-red-700 mt-2">
+                            <strong>Reason:</strong> {selectedLeave.deduction_reason}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                          <span className="text-sm font-medium text-green-800">
+                            No salary deduction - within annual sick leave allowance
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="border-t pt-4">
+                  <Label className="text-sm font-medium text-muted-foreground">Applied On</Label>
+                  <p className="text-sm font-semibold">{formatDate(selectedLeave.created_at)}</p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

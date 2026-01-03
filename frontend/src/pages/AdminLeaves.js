@@ -6,11 +6,10 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
-import { Search, Eye, Check, X, Clock, Calendar, FileText, Users } from 'lucide-react';
+import { Search, Eye, Check, X, Clock, FileText, DollarSign, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../utils/api';
 
@@ -171,6 +170,13 @@ const AdminLeaves = () => {
     } catch (error) {
       return 0;
     }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
   };
 
   const filteredLeaves = leaves.filter(leave => {
@@ -424,6 +430,41 @@ const AdminLeaves = () => {
                     <p className="text-sm text-muted-foreground mt-1">
                       {selectedLeave.admin_remarks}
                     </p>
+                  </div>
+                )}
+
+                {/* Salary Deduction Section - Only show for sick leave */}
+                {selectedLeave.leave_type === 'sick' && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-center mb-3">
+                      <DollarSign className="w-5 h-5 text-red-600 mr-2" />
+                      <Label className="text-sm font-medium text-red-600">Salary Impact</Label>
+                    </div>
+                    
+                    {selectedLeave.salary_deduction > 0 ? (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-red-800">Salary Deduction:</span>
+                          <span className="text-lg font-bold text-red-600">
+                            {formatCurrency(selectedLeave.salary_deduction)}
+                          </span>
+                        </div>
+                        {selectedLeave.deduction_reason && (
+                          <p className="text-xs text-red-700 mt-2">
+                            <strong>Reason:</strong> {selectedLeave.deduction_reason}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                          <span className="text-sm font-medium text-green-800">
+                            No salary deduction - within annual sick leave allowance
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

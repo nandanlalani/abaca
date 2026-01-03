@@ -54,6 +54,11 @@ const leaveSchema = new mongoose.Schema({
   approver_id: String,
   approver_comment: String,
   admin_remarks: String, // Add this field for frontend compatibility
+  salary_deduction: {
+    type: Number,
+    default: 0
+  },
+  deduction_reason: String,
   created_by: String,
   history: [leaveHistorySchema],
   created_at: {

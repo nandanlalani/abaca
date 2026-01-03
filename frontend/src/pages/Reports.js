@@ -25,6 +25,7 @@ import api from '../utils/api';
 
 const Reports = () => {
   const [loading, setLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
   const [reportType, setReportType] = useState('attendance');
   const [dateRange, setDateRange] = useState({
     from: startOfMonth(new Date()),
@@ -125,9 +126,67 @@ const Reports = () => {
     }
   };
 
-  const handleExportReport = () => {
-    toast.success('Report export started - CSV file will be downloaded');
-    // In a real implementation, this would generate and download a CSV/PDF file
+  const handleExportReport = async () => {
+    try {
+      if (!dateRange?.from || !dateRange?.to) {
+        toast.error('Please select a date range first');
+        return;
+      }
+
+      setExportLoading(true);
+      const startDate = format(dateRange.from, 'yyyy-MM-dd');
+      const endDate = format(dateRange.to, 'yyyy-MM-dd');
+      
+      let exportUrl = '';
+      let filename = '';
+      
+      switch (reportType) {
+        case 'attendance':
+          exportUrl = `/reports/attendance/export?start_date=${startDate}&end_date=${endDate}`;
+          filename = `attendance_report_${startDate}_to_${endDate}.csv`;
+          break;
+        case 'leaves':
+          exportUrl = `/reports/leaves/export?start_date=${startDate}&end_date=${endDate}`;
+          filename = `leave_report_${startDate}_to_${endDate}.csv`;
+          break;
+        case 'payroll':
+          // For payroll, we'll use month/year instead of date range
+          const fromDate = new Date(dateRange.from);
+          const toDate = new Date(dateRange.to);
+          exportUrl = `/reports/payroll/export?month=${fromDate.getMonth() + 1}&year=${fromDate.getFullYear()}`;
+          filename = `payroll_report_${fromDate.getMonth() + 1}_${fromDate.getFullYear()}.csv`;
+          break;
+        case 'employees':
+          exportUrl = `/reports/employees/export`;
+          filename = `employee_report_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+          break;
+        default:
+          toast.error('Invalid report type selected');
+          return;
+      }
+
+      // Create a temporary link to download the file
+      const response = await api.get(exportUrl, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Report downloaded successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export report. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -419,9 +478,9 @@ const Reports = () => {
                 </PopoverContent>
               </Popover>
 
-              <Button onClick={handleExportReport}>
+              <Button onClick={handleExportReport} disabled={exportLoading}>
                 <Download className="w-4 h-4 mr-2" />
-                Export CSV
+                {exportLoading ? 'Exporting...' : 'Export CSV'}
               </Button>
             </div>
           </CardHeader>

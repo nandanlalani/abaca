@@ -25,13 +25,61 @@ router.post('/', authenticate, [
 
     const { leave_type, start_date, end_date, remarks } = req.body;
 
+    // Calculate leave duration
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    const leaveDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Calculate salary deduction for sick leave
+    let salaryDeduction = 0;
+    let deductionReason = '';
+
+    if (leave_type === 'sick') {
+      try {
+        // Get employee profile to fetch salary information
+        const profile = await Profile.findOne({ employee_id: req.user.employee_id });
+        if (profile && profile.salary_structure && profile.salary_structure.basic) {
+          const dailySalary = profile.salary_structure.basic / 30; // Assuming 30 working days per month
+          
+          // Get employee's leave balance
+          const currentYear = new Date().getFullYear();
+          const leaveBalance = profile.leave_balance || {};
+          const sickLeaveBalance = leaveBalance.sick || 12; // Default 12 sick days per year
+          
+          // Count already taken sick leaves this year
+          const takenSickLeaves = await Leave.countDocuments({
+            employee_id: req.user.employee_id,
+            leave_type: 'sick',
+            status: 'approved',
+            start_date: {
+              $gte: new Date(currentYear, 0, 1),
+              $lte: new Date(currentYear, 11, 31)
+            }
+          });
+
+          const remainingSickLeaves = Math.max(0, sickLeaveBalance - takenSickLeaves);
+          
+          if (leaveDays > remainingSickLeaves) {
+            const unpaidDays = leaveDays - remainingSickLeaves;
+            salaryDeduction = Math.round(dailySalary * unpaidDays);
+            deductionReason = `${unpaidDays} unpaid sick leave days (exceeded annual limit of ${sickLeaveBalance} days)`;
+          }
+        }
+      } catch (calculationError) {
+        console.error('Error calculating salary deduction:', calculationError);
+        // Continue without deduction if calculation fails
+      }
+    }
+
     const leave = new Leave({
       employee_id: req.user.employee_id,
       user_id: req.user.user_id,
       leave_type,
-      start_date: new Date(start_date),
-      end_date: new Date(end_date),
+      start_date: startDate,
+      end_date: endDate,
       remarks,
+      salary_deduction: salaryDeduction,
+      deduction_reason: deductionReason,
       created_by: req.user.user_id,
       history: [{
         action: 'applied',
