@@ -18,18 +18,35 @@ const reportRoutes = require('./routes/reports');
 
 const app = express();
 const server = createServer(app);
+const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+  'http://localhost:3000', 
+  'http://localhost:3001',
+  'http://localhost:5000',
+  /\.replit\.dev$/,
+  /\.repl\.co$/
+];
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+    origin: corsOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors({
-  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (origin.includes('replit.dev') || origin.includes('repl.co') || origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -128,7 +145,7 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 8000;
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 

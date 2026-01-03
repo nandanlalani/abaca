@@ -195,16 +195,16 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b bg-card shadow-sm">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <Link to="/dashboard" className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">D</span>
+              <Link to="/dashboard" className="flex items-center space-x-2 transition-transform hover:scale-105">
+                <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                  <span className="text-white font-black text-xl">D</span>
                 </div>
-                <span className="font-bold text-xl tracking-tight">Dayflow</span>
+                <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Dayflow</span>
               </Link>
 
               <div className="hidden md:flex space-x-1">
@@ -215,14 +215,14 @@ const Layout = ({ children }) => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center space-x-2 ${
                         isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                          ? 'bg-primary text-white shadow-md shadow-primary/20'
+                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                       data-testid={`nav-${item.label.toLowerCase()}`}
                     >
-                      <Icon size={16} />
+                      <Icon size={18} />
                       <span>{item.label}</span>
                     </Link>
                   );
@@ -230,84 +230,82 @@ const Layout = ({ children }) => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative" data-testid="notifications-button">
-                    <Bell size={20} />
+                  <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl hover:bg-slate-100" data-testid="notifications-button">
+                    <Bell size={20} className="text-slate-600" />
                     {unreadCount > 0 && (
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                        {unreadCount}
-                      </Badge>
+                      <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse" />
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="font-semibold">Notifications</h3>
+                <DropdownMenuContent align="end" className="w-96 rounded-2xl p-0 overflow-hidden shadow-2xl border-slate-200">
+                  <div className="flex items-center justify-between p-5 bg-slate-50 border-b border-slate-200">
+                    <h3 className="font-bold text-slate-900">Notifications</h3>
                     {unreadCount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                        <Check className="w-4 h-4 mr-1" />
-                        Mark all read
+                      <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-8 text-xs font-bold text-primary hover:bg-primary/5 rounded-lg">
+                        <Check className="w-3.5 h-3.5 mr-1" />
+                        Mark all as read
                       </Button>
                     )}
                   </div>
-                  <ScrollArea className="h-80">
+                  <ScrollArea className="h-[400px]">
                     {notifications.length > 0 ? (
-                      <div className="p-2">
+                      <div className="p-3">
                         {notifications.map((notification) => (
                           <div
                             key={notification.notification_id}
-                            className={`p-3 rounded-lg mb-2 border transition-colors ${
+                            className={`p-4 rounded-xl mb-2 border transition-all cursor-pointer hover:scale-[0.99] active:scale-[0.98] ${
                               notification.is_read 
-                                ? 'bg-gray-50 border-gray-200' 
-                                : 'bg-blue-50 border-blue-200'
+                                ? 'bg-white border-slate-100' 
+                                : 'bg-primary/5 border-primary/10 shadow-sm'
                             }`}
                           >
                             <div className="flex items-start justify-between">
-                              <div className="flex items-start space-x-3 flex-1">
-                                <div className={`p-2 rounded-full ${
-                                  notification.is_read ? 'bg-gray-200' : 'bg-blue-200'
+                              <div className="flex items-start space-x-4 flex-1">
+                                <div className={`p-2.5 rounded-xl flex items-center justify-center ${
+                                  notification.is_read ? 'bg-slate-100 text-slate-500' : 'bg-primary text-white shadow-md shadow-primary/20'
                                 }`}>
                                   {getNotificationIcon(notification.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className={`text-sm font-medium ${
-                                    notification.is_read ? 'text-gray-700' : 'text-gray-900'
+                                  <p className={`text-sm font-bold truncate ${
+                                    notification.is_read ? 'text-slate-600' : 'text-slate-900'
                                   }`}>
                                     {notification.title}
                                   </p>
-                                  <p className={`text-xs mt-1 ${
-                                    notification.is_read ? 'text-gray-500' : 'text-gray-600'
+                                  <p className={`text-xs mt-1 leading-relaxed ${
+                                    notification.is_read ? 'text-slate-400' : 'text-slate-600'
                                   }`}>
                                     {notification.message}
                                   </p>
-                                  <div className="flex items-center mt-2 space-x-2">
-                                    <Clock className="w-3 h-3 text-gray-400" />
-                                    <span className="text-xs text-gray-400">
+                                  <div className="flex items-center mt-3 space-x-2 text-slate-400">
+                                    <Clock className="w-3 h-3" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">
                                       {formatTimeAgo(notification.created_at)}
                                     </span>
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-1 ml-2">
+                              <div className="flex items-center space-x-1 ml-3">
                                 {!notification.is_read && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => markAsRead(notification.notification_id)}
-                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => { e.stopPropagation(); markAsRead(notification.notification_id); }}
+                                    className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10 text-primary"
                                   >
-                                    <Check className="w-3 h-3" />
+                                    <Check className="w-4 h-4" />
                                   </Button>
                                 )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => deleteNotification(notification.notification_id)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                  onClick={(e) => { e.stopPropagation(); deleteNotification(notification.notification_id); }}
+                                  className="h-7 w-7 p-0 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
                               </div>
                             </div>
@@ -315,9 +313,11 @@ const Layout = ({ children }) => {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-8 text-center">
-                        <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500">No notifications</p>
+                      <div className="p-12 text-center">
+                        <div className="h-16 w-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <Bell className="w-8 h-8 text-slate-300" />
+                        </div>
+                        <p className="text-slate-400 font-medium">All caught up!</p>
                       </div>
                     )}
                   </ScrollArea>
@@ -326,25 +326,29 @@ const Layout = ({ children }) => {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2" data-testid="user-menu">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User size={16} />
+                  <Button variant="ghost" className="flex items-center space-x-3 p-1.5 h-auto rounded-xl hover:bg-slate-100 transition-all" data-testid="user-menu">
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-md shadow-primary/20">
+                      <User size={18} className="text-white" />
                     </div>
-                    <div className="hidden md:block text-left">
-                      <p className="text-sm font-medium">{user?.email?.split('@')[0]}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                    <div className="hidden md:block text-left mr-2">
+                      <p className="text-sm font-bold text-slate-900 leading-none">{user?.email?.split('@')[0]}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">{user?.role}</p>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/profile')} data-testid="profile-menu-item">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
+                <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-2xl border-slate-200">
+                  <DropdownMenuItem onClick={() => navigate('/profile')} className="rounded-xl p-3 cursor-pointer" data-testid="profile-menu-item">
+                    <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center mr-3">
+                      <User className="h-4 w-4 text-slate-600" />
+                    </div>
+                    <span className="font-bold text-slate-700">My Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} data-testid="logout-menu-item">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuItem onClick={handleLogout} className="rounded-xl p-3 cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50" data-testid="logout-menu-item">
+                    <div className="h-8 w-8 rounded-lg bg-red-50 flex items-center justify-center mr-3">
+                      <LogOut className="h-4 w-4" />
+                    </div>
+                    <span className="font-bold">Sign Out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -352,7 +356,7 @@ const Layout = ({ children }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden"
+                className="md:hidden h-10 w-10 rounded-xl"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -361,7 +365,7 @@ const Layout = ({ children }) => {
           </div>
 
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 space-y-2">
+            <div className="md:hidden py-6 space-y-1">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -370,13 +374,13 @@ const Layout = ({ children }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                        : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <Icon size={16} />
+                    <Icon size={18} />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -386,7 +390,7 @@ const Layout = ({ children }) => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">{children}</main>
     </div>
   );
 };
