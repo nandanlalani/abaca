@@ -12,7 +12,10 @@ const router = express.Router();
 router.post('/signup', [
   body('employee_id').notEmpty().withMessage('Employee ID is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   body('role').optional().isIn(['admin', 'hr', 'employee']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
@@ -447,7 +450,10 @@ router.post('/forgot-password', [
 // Reset password
 router.post('/reset-password', [
   body('token').notEmpty().withMessage('Reset token is required'),
-  body('new_password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+  body('new_password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -491,12 +497,80 @@ router.post('/reset-password', [
   }
 });
 
+// Refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token required'
+      });
+    }
+
+    // Verify refresh token
+    const decoded = verifyToken(refresh_token, true);
+    
+    // Get user from database
+    const user = await User.findOne({ user_id: decoded.user_id });
+    
+    if (!user || !user.refresh_token_hash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Verify refresh token hash
+    const isValidRefreshToken = await verifyPassword(refresh_token, user.refresh_token_hash);
+    
+    if (!isValidRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Create new access token
+    const tokenPayload = {
+      user_id: user.user_id,
+      email: user.email,
+      role: user.role,
+      employee_id: user.employee_id
+    };
+
+    const access_token = createAccessToken(tokenPayload);
+
+    res.json({
+      success: true,
+      access_token
+    });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token expired'
+      });
+    }
+    
+    console.error('Refresh token error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Invalid refresh token'
+    });
+  }
+});
+
 // Add Employee (Admin only)
 router.post('/add-employee', [
   body('first_name').notEmpty().withMessage('First name is required'),
   body('last_name').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   body('role').optional().isIn(['admin', 'hr', 'employee']).withMessage('Invalid role'),
   body('department').notEmpty().withMessage('Department is required'),
   body('job_title').notEmpty().withMessage('Job title is required'),
@@ -636,7 +710,10 @@ router.get('/me', authenticate, async (req, res) => {
 // Change password
 router.put('/change-password', authenticate, [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+  body('newPassword')
+    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
