@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Payroll, User } = require('../models');
+const { Payroll, User, Profile } = require('../models');
 const { authenticate, requireAdminOrHR } = require('../middleware/auth');
 
 const router = express.Router();
@@ -191,6 +191,112 @@ router.put('/:payroll_id', authenticate, requireAdminOrHR, [
     });
   } catch (error) {
     console.error('Update payroll error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Generate payroll for all employees (Admin/HR only)
+router.post('/generate', authenticate, requireAdminOrHR, [
+  body('month').isInt({ min: 1, max: 12 }).withMessage('Month must be between 1 and 12'),
+  body('year').isInt({ min: 2020 }).withMessage('Invalid year')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { month, year } = req.body;
+
+    // Get all active employees
+    const users = await User.find({ 
+      role: { $in: ['employee', 'hr', 'admin'] },
+      is_verified: true 
+    }).select('user_id employee_id');
+
+    if (users.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active employees found'
+      });
+    }
+
+    const payrollRecords = [];
+    let existingCount = 0;
+
+    for (const user of users) {
+      // Check if payroll already exists
+      const existingPayroll = await Payroll.findOne({
+        employee_id: user.employee_id,
+        month,
+        year
+      });
+
+      if (existingPayroll) {
+        existingCount++;
+        continue;
+      }
+
+      // Get employee profile for salary structure
+      const profile = await Profile.findOne({ employee_id: user.employee_id });
+      
+      let basic = 50000; // Default basic salary
+      let hra = 10000;
+      let allowances = 2500;
+      let deductions = 1500;
+
+      if (profile && profile.salary_structure) {
+        basic = profile.salary_structure.basic || 50000;
+        hra = Math.round(basic * 0.2); // 20% of basic
+        allowances = Math.round(basic * 0.1); // 10% of basic
+        const grossPay = basic + hra + allowances;
+        deductions = Math.round(grossPay * 0.15); // 15% deductions
+      }
+
+      const netPay = basic + hra + allowances - deductions;
+
+      const payroll = new Payroll({
+        employee_id: user.employee_id,
+        user_id: user.user_id,
+        month,
+        year,
+        basic,
+        hra,
+        allowances,
+        deductions,
+        net_pay: netPay,
+        status: 'processed',
+        created_by: req.user.user_id
+      });
+
+      payrollRecords.push(payroll);
+    }
+
+    if (payrollRecords.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Payroll already exists for all employees for ${month}/${year}`
+      });
+    }
+
+    await Payroll.insertMany(payrollRecords);
+
+    res.status(201).json({
+      success: true,
+      message: `Generated payroll for ${payrollRecords.length} employees`,
+      generated: payrollRecords.length,
+      existing: existingCount,
+      total: users.length
+    });
+  } catch (error) {
+    console.error('Generate payroll error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
